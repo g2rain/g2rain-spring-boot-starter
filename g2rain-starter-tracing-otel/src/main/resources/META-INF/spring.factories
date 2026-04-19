@@ -1,0 +1,2 @@
+org.springframework.boot.EnvironmentPostProcessor=\
+com.g2rain.tracing.otel.OpenTelemetryTracingPostProcessor

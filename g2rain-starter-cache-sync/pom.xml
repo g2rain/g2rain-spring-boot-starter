@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.g2rain</groupId>
+        <artifactId>g2rain-spring-boot-starter</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>g2rain-starter-cache-sync</artifactId>
+    <packaging>jar</packaging>
+
+    <name>G2rain Starter Cache Sync</name>
+
+    <description>
+        G2Rain Cache Sync Starter.
+        Offers a messaging-based cache synchronization solution, ensuring real-time consistency across service caches
+        and decoupling services.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-stream</artifactId>
+        </dependency>
+        <!-- Spring cloud Stream 存在两个依赖版本, install 抱错, 所以引入这个版本控制 -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+    </dependencies>
+</project>

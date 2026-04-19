@@ -1,0 +1,47 @@
+{
+    "groups": [
+        {
+            "name": "g2rain.id.generator",
+            "type": "com.g2rain.identity.IdGeneratorProperties",
+            "sourceType": "com.g2rain.identity.IdGeneratorProperties",
+            "description": "ID Generator Starter 配置"
+        }
+    ],
+    "properties": [
+        {
+            "name": "g2rain.id.generator.service-name",
+            "type": "java.lang.String",
+            "sourceType": "com.g2rain.identity.IdGeneratorProperties",
+            "defaultValue": "g2rain-infra",
+            "description": "Feign Client name（注册中心的服务名）"
+        },
+        {
+            "name": "g2rain.id.generator.service-url",
+            "type": "java.lang.String",
+            "sourceType": "com.g2rain.identity.IdGeneratorProperties",
+            "defaultValue": "",
+            "description": "ID 服务 URL（直连可选，注册中心会优先用 name）"
+        },
+        {
+            "name": "g2rain.id.generator.service-path",
+            "type": "java.lang.String",
+            "sourceType": "com.g2rain.identity.IdGeneratorProperties",
+            "defaultValue": "",
+            "description": "ID 服务路径）"
+        },
+        {
+            "name": "g2rain.id.generator.path-snowflake",
+            "type": "java.lang.String",
+            "sourceType": "com.g2rain.identity.IdGeneratorProperties",
+            "defaultValue": "/snowflake",
+            "description": "雪花 ID 路径"
+        },
+        {
+            "name": "g2rain.id.generator.path-business",
+            "type": "java.lang.String",
+            "sourceType": "com.g2rain.identity.IdGeneratorProperties",
+            "defaultValue": "/business",
+            "description": "业务 ID 生成接口路径"
+        }
+    ]
+}

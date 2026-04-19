@@ -1,0 +1,120 @@
+{
+    "groups": [
+        {
+            "name": "g2rain.web",
+            "type": "com.g2rain.web.autoconfigure.G2rainWebProperties",
+            "sourceType": "com.g2rain.web.autoconfigure.G2rainWebProperties",
+            "description": "G2rain Web 模块的配置属性"
+        }
+    ],
+    "properties": [
+        {
+            "name": "g2rain.web.enabled",
+            "type": "java.lang.Boolean",
+            "description": "Web 模块总开关",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.http-wrapper-filter-enabled",
+            "type": "java.lang.Boolean",
+            "description": "HTTP 请求响应包装器 Filter 是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.http-wrapper-filter-order",
+            "type": "java.lang.Integer",
+            "description": "HTTP 请求响应包装器 Filter 执行顺序",
+            "defaultValue": "100"
+        },
+        {
+            "name": "g2rain.web.global-exception-filter-enabled",
+            "type": "java.lang.Boolean",
+            "description": "全局异常 Filter 是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.principal-context-scope-filter-enabled",
+            "type": "java.lang.Boolean",
+            "description": "身份主体作用域 Filter 是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.principal-context-scope-filter-order",
+            "type": "java.lang.Integer",
+            "description": "身份主体作用域 Filter 执行顺序",
+            "defaultValue": "120"
+        },
+        {
+            "name": "g2rain.web.global-exception-filter-use-custom-json",
+            "type": "java.lang.Boolean",
+            "description": "全局异常 Filter 数据自定义序列化是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.global-exception-filter-order",
+            "type": "java.lang.Integer",
+            "description": "全局异常 Filter 执行顺序",
+            "defaultValue": "150"
+        },
+        {
+            "name": "g2rain.web.principal-context-filter-enabled",
+            "type": "java.lang.Boolean",
+            "description": "身份主体上下文注入 Filter 是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.principal-context-filter-order",
+            "type": "java.lang.Integer",
+            "description": "身份主体上下文注入 Filter 执行顺序",
+            "defaultValue": "200"
+        },
+        {
+            "name": "g2rain.web.access-log-filter-enabled",
+            "type": "java.lang.Boolean",
+            "description": "访问日志 Filter 是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.access-log-filter-order",
+            "type": "java.lang.Integer",
+            "description": "访问日志 Filter 执行顺序",
+            "defaultValue": "300"
+        },
+        {
+            "name": "g2rain.web.login-guard-interceptor-enabled",
+            "type": "java.lang.Boolean",
+            "description": "登录校验拦截器是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.login-guard-interceptor-order",
+            "type": "java.lang.Integer",
+            "description": "登录校验拦截器执行顺序",
+            "defaultValue": "400"
+        },
+        {
+            "name": "g2rain.web.identity-param-injector-enabled",
+            "type": "java.lang.Boolean",
+            "description": "身份参数注入拦截器是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.identity-param-injector-order",
+            "type": "java.lang.Integer",
+            "description": "身份参数注入拦截器执行顺序",
+            "defaultValue": "500"
+        },
+        {
+            "name": "g2rain.web.global-exception-handler-enabled",
+            "type": "java.lang.Boolean",
+            "description": "全局异常处理器是否启用",
+            "defaultValue": "true"
+        },
+        {
+            "name": "g2rain.web.enable-result-mixin-filter",
+            "type": "java.lang.Boolean",
+            "description": "是否启用 Result / BaseError MixIn 字段过滤",
+            "defaultValue": "false"
+        }
+    ]
+}

@@ -1,0 +1,27 @@
+# G2rain Starter OpenTelemetry Tracing: 低优先级默认项(业务 application / profile 可覆盖)
+management:
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    propagation:
+      type:
+        - W3C
+    baggage:
+      remote-fields:
+        - requestId
+      correlation:
+        fields:
+          - requestId
+  otlp:
+    metrics:
+      export:
+        enabled: false
+    tracing:
+      export:
+        enabled: false
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [%X{spanId:-}] [%X{requestId:-}] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [%X{spanId:-}] [%X{requestId:-}] %logger{50} - %msg%n"

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.g2rain</groupId>
+        <artifactId>g2rain-spring-boot-starter</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>g2rain-starter-aegis-core</artifactId>
+    <packaging>pom</packaging>
+
+    <name>G2rain Starter Aegis Core</name>
+
+    <description>
+        G2Rain Aegis Core Starter.
+        The cornerstone of microservice applications, providing unified and reliable foundational protection to simplify
+        service initialization.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.g2rain</groupId>
+            <artifactId>g2rain-starter-web-infra</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.g2rain</groupId>
+            <artifactId>g2rain-starter-identity-client</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.g2rain</groupId>
+            <artifactId>g2rain-starter-tracing-otel</artifactId>
+            <version>${revision}</version>
+        </dependency>
+    </dependencies>
+</project>
