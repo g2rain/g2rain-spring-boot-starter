@@ -1,7 +1,9 @@
 package com.g2rain.data.isolation.support;
 
+import com.g2rain.common.syncer.AbstractMessageStorage;
 import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.data.isolation.DataScopeExaminer;
+import com.g2rain.data.isolation.model.OrganScope;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.NonNull;
@@ -18,12 +20,12 @@ import java.util.concurrent.TimeUnit;
  * @author alpha
  * @since 2025/10/13
  */
-public class CachedDataScopeExaminer implements DataScopeExaminer {
+public class CachedDataScopeExaminer extends AbstractMessageStorage<String, OrganScope, String> implements DataScopeExaminer {
     /**
      * 组织范围校验缓存。
      */
     private final Cache<@NonNull String, Boolean> cache = Caffeine.newBuilder()
-        .expireAfterAccess(30, TimeUnit.MINUTES)
+        .expireAfterWrite(10, TimeUnit.MINUTES)
         .maximumSize(50_000)
         .recordStats()
         .build();
@@ -63,5 +65,42 @@ public class CachedDataScopeExaminer implements DataScopeExaminer {
         boolean tenantInScope = dataScopeExaminer.isOrganInScope(tenantId);
         cache.put(cacheKey, tenantInScope);
         return tenantInScope;
+    }
+
+    @Override
+    protected @NonNull String dataSource() {
+        return "ORGAN_HIERARCHY";
+    }
+
+    @Override
+    protected @NonNull Class<OrganScope> getValueType() {
+        return OrganScope.class;
+    }
+
+    @Override
+    protected @NonNull String getKey(@NonNull OrganScope value) {
+        Long sourceOrganId = value.getSourceOrganId();
+        Long targetOrganId = value.getTargetOrganId();
+        return String.format("%d_%d", sourceOrganId, targetOrganId);
+    }
+
+    @Override
+    protected void create(@NonNull String key, OrganScope value) {
+        delete(key);
+    }
+
+    @Override
+    protected void delete(@NonNull String key) {
+        cache.invalidate(key);
+    }
+
+    @Override
+    protected void update(@NonNull String key, OrganScope value) {
+        delete(key);
+    }
+
+    @Override
+    protected String get(@NonNull String key) {
+        return "";
     }
 }
