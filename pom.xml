@@ -78,6 +78,7 @@
         <module>g2rain-starter-feign-plus</module>
         <module>g2rain-starter-tracing-otel</module>
         <module>g2rain-starter-stream-redis</module>
+        <module>g2rain-starter-spring-doc</module>
     </modules>
 
     <properties>
@@ -89,6 +90,7 @@
         <jackson-bom.version>3.1.1</jackson-bom.version>
         <spring.cloud.version>2025.1.1</spring.cloud.version>
         <org.jetbrains.annotations>26.1.0</org.jetbrains.annotations>
+        <commons.lang3.version>3.20.0</commons.lang3.version>
         <commons.fileupload.version>1.6.0</commons.fileupload.version>
         <redisson.starter.version>4.3.0</redisson.starter.version>
         <g2rain.common.version>1.0.4</g2rain.common.version>
@@ -97,6 +99,7 @@
         <org.mybatis.version>3.5.19</org.mybatis.version>
         <jsqlparser.version>4.7</jsqlparser.version>
         <caffeine.version>3.2.3</caffeine.version>
+        <springdoc.openapi.version>3.0.2</springdoc.openapi.version>
         <lombok.version>1.18.44</lombok.version>
         <mybatis.starter.version>4.0.1</mybatis.starter.version>
         <mockito.core.version>5.23.0</mockito.core.version>
@@ -129,6 +132,11 @@
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
                 <version>${org.jetbrains.annotations}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons.lang3.version}</version>
             </dependency>
             <dependency>
                 <groupId>commons-fileupload</groupId>
@@ -164,6 +172,11 @@
                 <groupId>com.g2rain</groupId>
                 <artifactId>g2rain-mybatis-pagination</artifactId>
                 <version>${g2rain.mybatis.pagination.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+                <version>${springdoc.openapi.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.projectlombok</groupId>
