@@ -1,0 +1,15 @@
+{
+  "properties": [
+    {
+      "name": "g2rain.springdoc.description",
+      "type": "java.lang.String",
+      "description": "OpenAPI Info.description；为空则使用「{spring.application.name} 接口文档」。"
+    },
+    {
+      "name": "g2rain.springdoc.api-version",
+      "type": "java.lang.String",
+      "defaultValue": "1.0",
+      "description": "OpenAPI Info.version。"
+    }
+  ]
+}
