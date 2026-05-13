@@ -82,7 +82,7 @@
     </modules>
 
     <properties>
-        <revision>1.0.0</revision>
+        <revision>1.0.1</revision>
         <!--
             spring boot 4.0.5 引入的是3.1.0 但是3.1.0 有漏洞, 所以升级到3.1.1,
             后续如果升级spring boot 版本, 酌情是否删掉这个属性
