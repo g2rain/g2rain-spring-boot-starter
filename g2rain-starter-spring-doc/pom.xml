@@ -1,0 +1,26 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.g2rain</groupId>
+        <artifactId>g2rain-spring-boot-starter</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>g2rain-starter-spring-doc</artifactId>
+    <packaging>jar</packaging>
+
+    <name>G2rain Starter Spring Doc</name>
+
+    <description>
+        G2rain Spring Doc Starter.
+        Focuses on generating and providing JSON format API documentation, supporting document export and serialization.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>
+        </dependency>
+    </dependencies>
+</project>
