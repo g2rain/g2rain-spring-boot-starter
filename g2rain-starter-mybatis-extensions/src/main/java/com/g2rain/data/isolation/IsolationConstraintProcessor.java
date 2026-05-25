@@ -97,11 +97,9 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
             return;
         }
 
-        // 获取 ScopedValue 的调用链上下文操作目标组织标识
-        Long targetOrganId = PrincipalContextHolder.getTargetOrganId();
-
         // 如果是租户直接用租户的组织标识
-        if (Objects.isNull(targetOrganId) && OrganType.isTenant(PrincipalContextHolder.getOrganType())) {
+        Long targetOrganId = null;
+        if (OrganType.isTenant(PrincipalContextHolder.getOrganType())) {
             targetOrganId = PrincipalContextHolder.getOrganId();
         }
 
