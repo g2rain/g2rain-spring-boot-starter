@@ -21,7 +21,6 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
-import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -182,7 +181,7 @@ public class IsolationQueryProcessor extends QueryProcessor {
 
             if (policy.isOtherRead() && StringUtils.hasText(policy.getOtherPermRule())) {
                 try {
-                    parts.add(CCJSqlParserUtil.parseCondExpression("(" + policy.getOtherPermRule() + ")"));
+                    parts.add(CCJSqlParserUtil.parseCondExpression(policy.getOtherPermRule()));
                 } catch (JSQLParserException ignored) {
                     // 规则无法解析则跳过该分支
                 }
@@ -196,9 +195,7 @@ public class IsolationQueryProcessor extends QueryProcessor {
                 continue;
             }
 
-            var leftExpr = new ParenthesedExpressionList<>(combined);
-            var rightExpr = new ParenthesedExpressionList<>(part);
-            combined = new OrExpression(leftExpr, rightExpr);
+            combined = new OrExpression(combined, part);
         }
 
         return combined;

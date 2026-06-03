@@ -2,6 +2,7 @@ package com.g2rain.data.isolation.sql;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
+import net.sf.jsqlparser.expression.Parenthesis;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
@@ -76,10 +77,7 @@ public class DataIsolationSelectVisitor extends SelectVisitorAdapter {
 
         Expression combined = buildOrganExpression(table);
         if (Objects.nonNull(permissionExpr)) {
-            combined = new AndExpression(
-                new ParenthesedExpressionList<>(combined),
-                new ParenthesedExpressionList<>(permissionExpr)
-            );
+            combined = new AndExpression(combined, new Parenthesis(permissionExpr));
         }
 
         Expression where = plainSelect.getWhere();
