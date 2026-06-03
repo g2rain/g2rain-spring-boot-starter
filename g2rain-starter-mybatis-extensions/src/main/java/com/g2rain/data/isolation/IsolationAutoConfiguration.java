@@ -1,12 +1,17 @@
 package com.g2rain.data.isolation;
 
 
+import com.g2rain.data.isolation.processor.IsolationInsertProcessor;
+import com.g2rain.data.isolation.processor.IsolationQueryProcessor;
+import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
 import com.g2rain.data.isolation.support.CachedDataScopeExaminer;
+import com.g2rain.data.isolation.support.DataPermissionPolicyOpenFeign;
+import com.g2rain.data.isolation.support.DataPermissionPolicyRestClient;
+import com.g2rain.data.isolation.support.DefaultDataPermissionPolicyResolver;
 import com.g2rain.data.isolation.support.DefaultDataScopeExaminer;
 import com.g2rain.data.isolation.support.OrganHierarchyOpenFeign;
 import com.g2rain.data.isolation.support.OrganHierarchyRestClient;
 import com.g2rain.mybatis.extension.ExecutorCompositeInterceptor;
-import com.g2rain.mybatis.extension.StatementHandlerCompositeInterceptor;
 import com.g2rain.mybatis.pagination.PaginationQueryProcessor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
@@ -121,7 +126,6 @@ public class IsolationAutoConfiguration {
             }
         }
 
-
         /**
          * 默认组织层级客户端实现配置。
          * <p>
@@ -175,7 +179,7 @@ public class IsolationAutoConfiguration {
                 // 这样在没有负载均衡环境时，依然可以根据 serviceUrl 正常工作
                 RestClient.Builder finalBuilder = Objects.nonNull(lbBuilder) ? lbBuilder : builder;
 
-                // noinspection HttpUrlsUsage
+                // noinspection
                 String baseAddress = StringUtils.hasText(props.getServiceUrl())
                     ? props.getServiceUrl()
                     : "http://" + props.getServiceName();
@@ -207,6 +211,75 @@ public class IsolationAutoConfiguration {
         }
 
         /**
+         * 数据权限策略远程客户端配置（仿组织层级客户端，独立装配）。
+         */
+        @Configuration(proxyBeanMethods = false)
+        @ConditionalOnMissingBean(DataPermissionPolicyClient.class)
+        public static class PolicyClientConfiguration {
+
+            @Configuration(proxyBeanMethods = false)
+            @EnableFeignClients(clients = DataPermissionPolicyOpenFeign.class)
+            @ConditionalOnClass(name = "org.springframework.cloud.openfeign.FeignClient")
+            public static class FeignPolicyActivationConfiguration {
+
+            }
+
+            @Bean
+            @ConditionalOnMissingClass("org.springframework.cloud.openfeign.FeignClient")
+            public DataPermissionPolicyClient dataPermissionPolicyRestClient(
+                RestClient.Builder builder,
+                IsolationProperties props,
+                ConfigurableBeanFactory beanFactory
+            ) {
+                RestClient.Builder lbBuilder = null;
+                try {
+                    lbBuilder = BeanFactoryAnnotationUtils.qualifiedBeanOfType(
+                        beanFactory, RestClient.Builder.class,
+                        "org.springframework.cloud.client.loadbalancer.LoadBalanced"
+                    );
+                } catch (Exception ignored) {
+                    // ignore
+                }
+
+                RestClient.Builder finalBuilder = Objects.nonNull(lbBuilder) ? lbBuilder : builder;
+                // noinspection
+                String baseAddress = StringUtils.hasText(props.getPolicyServiceUrl())
+                    ? props.getPolicyServiceUrl()
+                    : "http://" + props.getPolicyServiceName();
+
+                String rootUrl = UriComponentsBuilder.fromUriString(baseAddress)
+                    .path(props.getPolicyServicePath())
+                    .toUriString();
+
+                return HttpServiceProxyFactory
+                    .builderFor(RestClientAdapter.create(finalBuilder.baseUrl(rootUrl).build()))
+                    .embeddedValueResolver(beanFactory::resolveEmbeddedValue)
+                    .build()
+                    .createClient(DataPermissionPolicyRestClient.class);
+            }
+        }
+
+        /**
+         * 默认数据权限策略解析器。
+         */
+        @Bean
+        @ConditionalOnBean(DataPermissionPolicyClient.class)
+        @ConditionalOnMissingBean(DataPermissionPolicyResolver.class)
+        public DataPermissionPolicyResolver defaultDataPermissionPolicyResolver(DataPermissionPolicyClient client) {
+            return new DefaultDataPermissionPolicyResolver(client);
+        }
+
+        /**
+         * 缓存增强的数据权限策略解析器。
+         */
+        @Bean
+        @ConditionalOnBean(DataPermissionPolicyResolver.class)
+        @ConditionalOnMissingBean(CachedDataPermissionPolicyResolver.class)
+        public CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver(DataPermissionPolicyResolver dataPermissionPolicyResolver) {
+            return new CachedDataPermissionPolicyResolver(dataPermissionPolicyResolver);
+        }
+
+        /**
          * 缓存增强的数据范围校验器。
          *
          * @param dataScopeExaminer 原始校验器
@@ -221,13 +294,15 @@ public class IsolationAutoConfiguration {
         /**
          * 查询隔离处理器。
          *
-         * @param cachedDataScopeExaminer 缓存校验器
+         * @param cachedDataScopeExaminer            缓存校验器
+         * @param cachedDataPermissionPolicyResolver 缓存策略解析器
          * @return 查询隔离处理器
          */
         @Bean
         @ConditionalOnMissingBean(IsolationQueryProcessor.class)
-        public IsolationQueryProcessor isolationQueryProcessor(CachedDataScopeExaminer cachedDataScopeExaminer) {
-            return new IsolationQueryProcessor(cachedDataScopeExaminer, 10000);
+        @ConditionalOnBean({CachedDataScopeExaminer.class, CachedDataPermissionPolicyResolver.class})
+        public IsolationQueryProcessor isolationQueryProcessor(CachedDataScopeExaminer cachedDataScopeExaminer, CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
+            return new IsolationQueryProcessor(cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, 10000);
         }
 
         /**
@@ -238,34 +313,9 @@ public class IsolationAutoConfiguration {
          */
         @Bean
         @ConditionalOnMissingBean(IsolationInsertProcessor.class)
-        public IsolationInsertProcessor isolationInsertProcessor(CachedDataScopeExaminer cachedDataScopeExaminer) {
-            return new IsolationInsertProcessor(cachedDataScopeExaminer, 10000);
-        }
-
-        /**
-         * 更新/删除约束处理器。
-         *
-         * @param cachedDataScopeExaminer 缓存校验器
-         * @return 约束处理器
-         */
-        @Bean
-        @ConditionalOnMissingBean(IsolationConstraintProcessor.class)
-        public IsolationConstraintProcessor isolationConstraintProcessor(CachedDataScopeExaminer cachedDataScopeExaminer) {
-            return new IsolationConstraintProcessor(cachedDataScopeExaminer, 10000);
-        }
-
-        /**
-         * StatementHandler 组合拦截器，挂载 SQL prepare 阶段处理器。
-         *
-         * @param isolationConstraintProcessor 更新/删除约束处理器
-         * @return StatementHandler 组合拦截器
-         */
-        @Bean
-        @ConditionalOnMissingBean(StatementHandlerCompositeInterceptor.class)
-        public StatementHandlerCompositeInterceptor statementHandlerCompositeInterceptor(IsolationConstraintProcessor isolationConstraintProcessor) {
-            StatementHandlerCompositeInterceptor interceptor = new StatementHandlerCompositeInterceptor();
-            interceptor.addPluginProcessor(isolationConstraintProcessor);
-            return interceptor;
+        @ConditionalOnBean({CachedDataScopeExaminer.class, CachedDataPermissionPolicyResolver.class})
+        public IsolationInsertProcessor isolationInsertProcessor(CachedDataScopeExaminer cachedDataScopeExaminer, CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
+            return new IsolationInsertProcessor(cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, 10000);
         }
 
         /**

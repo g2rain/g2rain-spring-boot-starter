@@ -79,6 +79,7 @@
         <module>g2rain-starter-tracing-otel</module>
         <module>g2rain-starter-stream-redis</module>
         <module>g2rain-starter-spring-doc</module>
+        <module>g2rain-starter-department-principal</module>
     </modules>
 
     <properties>

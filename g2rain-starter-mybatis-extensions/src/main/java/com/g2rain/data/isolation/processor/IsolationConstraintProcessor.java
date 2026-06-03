@@ -1,12 +1,14 @@
-package com.g2rain.data.isolation;
+package com.g2rain.data.isolation.processor;
 
-import com.g2rain.common.enums.OrganType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.web.PrincipalContextHolder;
-import com.g2rain.data.isolation.enums.IsolationErrorCode;
+import com.g2rain.data.isolation.DataIsolationCache;
+import com.g2rain.data.isolation.DataScopeExaminer;
 import com.g2rain.data.isolation.model.DataIsolationMeta;
+import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
+import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
+import com.g2rain.data.isolation.util.IsolationOrganSupport;
 import com.g2rain.mybatis.extension.InvocationContext;
-import com.g2rain.mybatis.extension.IsolationFieldExtractor;
 import com.g2rain.mybatis.extension.PrepareProcessor;
 import com.g2rain.mybatis.extension.SqlHelper;
 import com.g2rain.mybatis.extension.SqlParserDelegate;
@@ -25,29 +27,33 @@ import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.session.Configuration;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * 数据隔离约束处理器。
  * <p>
  * 处理 UPDATE / DELETE 场景，在 SQL 的 WHERE 条件中自动追加组织隔离约束，
- * 防止越权修改或删除非授权组织数据。
+ * 并在配置动态策略时追加数据权限过滤条件，防止越权修改或删除非授权数据。
  * </p>
  *
  * @author alpha
  * @since 2026/3/8
  */
+@Deprecated
 public class IsolationConstraintProcessor extends PrepareProcessor {
 
     /**
      * 数据范围校验器。
      */
     private final DataScopeExaminer dataScopeExaminer;
+
+    /**
+     * 数据权限策略解析器。
+     */
+    private final CachedDataPermissionPolicyResolver dataPermissionPolicyResolver;
 
     /**
      * 拦截器顺序
@@ -59,8 +65,9 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
      *
      * @param order 拦截器执行顺序
      */
-    public IsolationConstraintProcessor(DataScopeExaminer dataScopeExaminer, int order) {
+    public IsolationConstraintProcessor(DataScopeExaminer dataScopeExaminer, CachedDataPermissionPolicyResolver dataPermissionPolicyResolver, int order) {
         this.dataScopeExaminer = dataScopeExaminer;
+        this.dataPermissionPolicyResolver = dataPermissionPolicyResolver;
         this.order = order;
     }
 
@@ -97,41 +104,28 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
             return;
         }
 
-        // 如果是租户直接用租户的组织标识
-        Long targetOrganId = null;
-        if (OrganType.isTenant(PrincipalContextHolder.getOrganType())) {
-            targetOrganId = PrincipalContextHolder.getOrganId();
-        }
-
-        // 获取执行 Mapper 接口方法的参数中的目标组织标识
-        if (Objects.isNull(targetOrganId)) {
-            // 1. 获取configuration
-            Configuration configuration = statementContext.configuration();
-
-            /*
-             * 2. 通过 BoundSql 对象（它持有原始 SQL 和 绑定的参数）提取 parameterObject
-             * 这个对象就是 MyBatis 准备设置到 PreparedStatement 中的原始参数（实体、Map 或 基础类型）
-             */
-            Object parameter = statementContext.boundSql().getParameterObject();
-
-            // 3. 获取数据隔离的实际参数名称
-            String propertyName = meta.getOrganIdPropertyName();
-
-            Set<Object> values = IsolationFieldExtractor.extractValues(configuration, parameter, propertyName);
-            if (values.size() != 1) {
-                throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-            }
-
-            Object val = values.iterator().next();
-            targetOrganId = (val instanceof Number) ? ((Number) val).longValue() : null;
-        }
-
-        if (Objects.isNull(targetOrganId)) {
-            throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-        }
-
+        Object parameter = statementContext.boundSql().getParameterObject();
+        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId(meta, statementContext.configuration(), parameter);
         if (!dataScopeExaminer.isOrganInScope(targetOrganId)) {
-            throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
+            throw new BusinessException(com.g2rain.data.isolation.enums.IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
+        }
+
+        Expression permissionExpression = null;
+        if (meta.hasDynamicPolicy()) {
+            DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
+                targetOrganId, meta.getIsolationModule(), meta.getIsolationTable()
+            );
+            Table table = null;
+            try {
+                Statement statement = SqlParserDelegate.parse(statementContext.sqlContext().sql());
+                if (statement instanceof Update update) {
+                    table = update.getTable();
+                } else if (statement instanceof Delete delete) {
+                    table = delete.getTable();
+                }
+            } catch (JSQLParserException e) {
+                throw new SQLException(e);
+            }
         }
 
         try {
@@ -170,30 +164,27 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
     }
 
     /**
-     * 生成并拼接组织隔离条件。
-     *
-     * @param table        主表
-     * @param where        原始 where 条件
-     * @param columnName   组织字段名
-     * @param whereSegment 组织字段值
-     * @return 拼接后的 where 表达式
+     * 生成并拼接组织隔离条件，以及可选的数据权限策略条件。
      */
     private Expression andExpression(Table table, Expression where, final String columnName, final Long whereSegment) {
-        //获得 where 条件表达式
+        Expression combined = buildOrganExpression(table, columnName, whereSegment);
+        if (Objects.isNull(where)) {
+            return combined;
+        }
+
+        if (where instanceof OrExpression) {
+            return new AndExpression(new ParenthesedExpressionList<>(where), combined);
+        }
+
+        return new AndExpression(where, combined);
+    }
+
+    private Expression buildOrganExpression(Table table, String columnName, Long whereSegment) {
         StringBuilder column = new StringBuilder();
         if (Objects.nonNull(table.getAlias())) {
             column.append(table.getAlias().getName()).append(".");
         }
 
-        final Expression expression = new EqualsTo(new Column(column.append(columnName).toString()), new LongValue(whereSegment));
-        if (Objects.isNull(where)) {
-            return expression;
-        }
-
-        if (where instanceof OrExpression) {
-            return new AndExpression(new ParenthesedExpressionList<>(where), expression);
-        }
-
-        return new AndExpression(where, expression);
+        return new EqualsTo(new Column(column.append(columnName).toString()), new LongValue(whereSegment));
     }
 }
