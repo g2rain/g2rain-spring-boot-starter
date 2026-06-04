@@ -1,6 +1,5 @@
 package com.g2rain.data.isolation.support;
 
-import com.g2rain.common.json.JsonCodecFactory;
 import com.g2rain.common.model.Result;
 import com.g2rain.common.syncer.AbstractMessageStorage;
 import com.g2rain.common.web.PrincipalContextHolder;
@@ -12,7 +11,6 @@ import com.g2rain.data.isolation.model.PolicyCacheKey;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.util.Objects;
@@ -22,7 +20,6 @@ import java.util.concurrent.TimeUnit;
 /**
  * 带本地缓存的数据权限策略解析器。
  */
-@Slf4j
 public class CachedDataPermissionPolicyResolver extends AbstractMessageStorage<String, PermissionPolicyScope, String>
     implements DataPermissionPolicyResolver {
 
@@ -102,7 +99,6 @@ public class CachedDataPermissionPolicyResolver extends AbstractMessageStorage<S
     }
 
     private void invalidate(PermissionPolicyScope scope) {
-        log.info("收到数据权限策略缓存失效 sync 消息: scope={}", JsonCodecFactory.instance().obj2str(scope));
         if (!PolicyCacheKey.isValidScope(scope)) {
             return;
         }
