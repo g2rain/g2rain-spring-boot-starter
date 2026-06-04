@@ -1,5 +1,6 @@
 package com.g2rain.data.isolation.processor;
 
+import com.g2rain.common.enums.OrganType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.data.isolation.DataIsolationCache;
@@ -14,7 +15,6 @@ import com.g2rain.mybatis.extension.UpdateProcessor;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.session.Configuration;
 
 import java.util.Objects;
 
@@ -28,6 +28,7 @@ import java.util.Objects;
  * @author alpha
  * @since 2026/3/8
  */
+@Deprecated
 public class IsolationInsertProcessor extends UpdateProcessor {
 
     /**
@@ -72,7 +73,11 @@ public class IsolationInsertProcessor extends UpdateProcessor {
         }
 
         // 运营公司不进行拦截
-        return !PrincipalContextHolder.isAdminCompany();
+        if (PrincipalContextHolder.isAdminCompany()) {
+            return false;
+        }
+
+        return OrganType.isTenant(PrincipalContextHolder.getOrganType());
     }
 
     @Override
@@ -89,26 +94,9 @@ public class IsolationInsertProcessor extends UpdateProcessor {
             return;
         }
 
-        Configuration configuration = mappedStatement.getConfiguration();
-        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId(meta, configuration, parameter);
+        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId();
         if (!dataScopeExaminer.isOrganInScope(targetOrganId)) {
             throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
-        }
-
-        if (meta.hasDynamicPolicy()) {
-            DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
-                targetOrganId, meta.getIsolationModule(), meta.getIsolationTable()
-            );
-
-            if (Objects.isNull(policy)) {
-                return;
-            }
-
-            if (!policy.isGroupWrite() && !policy.isOtherWrite()) {
-                throw new BusinessException(IsolationErrorCode.ISOLATION_POLICY_WRITE_DENIED,
-                    meta.getIsolationModule(), meta.getIsolationTable()
-                );
-            }
         }
     }
 

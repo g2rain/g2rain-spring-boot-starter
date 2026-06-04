@@ -1,5 +1,6 @@
 package com.g2rain.data.isolation.processor;
 
+import com.g2rain.common.enums.OrganType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.data.isolation.DataIsolationCache;
@@ -8,6 +9,7 @@ import com.g2rain.data.isolation.enums.IsolationErrorCode;
 import com.g2rain.data.isolation.model.DataIsolationMeta;
 import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
 import com.g2rain.data.isolation.sql.DataIsolationSelectVisitor;
+import com.g2rain.data.isolation.sql.DataPermissionConditionBuilder;
 import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
 import com.g2rain.data.isolation.util.IsolationOrganSupport;
 import com.g2rain.mybatis.extension.InvocationContext;
@@ -16,13 +18,6 @@ import com.g2rain.mybatis.extension.SqlHelper;
 import com.g2rain.mybatis.extension.SqlParserDelegate;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.Expression;
-import net.sf.jsqlparser.expression.LongValue;
-import net.sf.jsqlparser.expression.StringValue;
-import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
-import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
-import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
-import net.sf.jsqlparser.parser.CCJSqlParserUtil;
-import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
@@ -30,14 +25,10 @@ import net.sf.jsqlparser.statement.select.Select;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
-import org.springframework.util.StringUtils;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -96,7 +87,11 @@ public class IsolationQueryProcessor extends QueryProcessor {
         }
 
         // 运营公司不进行拦截
-        return !PrincipalContextHolder.isAdminCompany();
+        if (PrincipalContextHolder.isAdminCompany()) {
+            return false;
+        }
+
+        return OrganType.isTenant(PrincipalContextHolder.getOrganType());
     }
 
     @Override
@@ -107,8 +102,8 @@ public class IsolationQueryProcessor extends QueryProcessor {
             return;
         }
 
-        Configuration configuration = ms.getConfiguration();
-        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId(meta, configuration, parameter);
+        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId();
+        // 这里暂时用不上, 不过保留, 后续对于公司、渠道商、服务商等类型的机构可能会继续使用
         if (!dataScopeExaminer.isOrganInScope(targetOrganId)) {
             throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
         }
@@ -126,10 +121,14 @@ public class IsolationQueryProcessor extends QueryProcessor {
                 DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
                     targetOrganId, meta.getIsolationModule(), meta.getIsolationTable()
                 );
-                permissionExpression = buildCondition(table, meta, policy);
+                permissionExpression = DataPermissionConditionBuilder.buildReadCondition(table, meta, policy);
             }
 
-            select.accept(new DataIsolationSelectVisitor(meta.getOrganIdColumnName(), targetOrganId, permissionExpression));
+            select.accept(new DataIsolationSelectVisitor(
+                meta.getOrganIdColumnName(),
+                targetOrganId,
+                permissionExpression
+            ));
             SqlHelper.sql(boundSql).sql(select.toString());
         } catch (JSQLParserException e) {
             throw new SQLException(e);
@@ -144,60 +143,5 @@ public class IsolationQueryProcessor extends QueryProcessor {
     @Override
     public int order() {
         return this.order;
-    }
-
-    private static Expression buildCondition(Table table, DataIsolationMeta meta, DataPermissionPolicyResolveResult policy) {
-        if (!meta.hasDynamicPolicy()) {
-            return null;
-        }
-
-        String tablePrefix = Objects.nonNull(table.getAlias()) ? table.getAlias().getName() + "." : "";
-        List<Expression> parts = new ArrayList<>();
-
-        if (meta.hasUserColumn()) {
-            Long userId = PrincipalContextHolder.getUserId();
-            if (Objects.nonNull(userId)) {
-                parts.add(new EqualsTo(new Column(tablePrefix + meta.getUserIdColumnName()), new LongValue(userId)));
-            }
-        }
-
-        if (Objects.nonNull(policy)) {
-            if (policy.isGroupRead() && meta.hasDeptColumn()) {
-                String deptPaths = PrincipalContextHolder.getDeptPath();
-                if (StringUtils.hasText(deptPaths)) {
-                    for (String deptPath : deptPaths.split(",")) {
-                        String trimmed = deptPath.trim();
-                        if (!StringUtils.hasText(trimmed)) {
-                            continue;
-                        }
-
-                        LikeExpression like = new LikeExpression();
-                        like.setLeftExpression(new Column(tablePrefix + meta.getDeptPathColumnName()));
-                        like.setRightExpression(new StringValue(trimmed + "%"));
-                        parts.add(like);
-                    }
-                }
-            }
-
-            if (policy.isOtherRead() && StringUtils.hasText(policy.getOtherPermRule())) {
-                try {
-                    parts.add(CCJSqlParserUtil.parseCondExpression(policy.getOtherPermRule()));
-                } catch (JSQLParserException ignored) {
-                    // 规则无法解析则跳过该分支
-                }
-            }
-        }
-
-        Expression combined = null;
-        for (Expression part : parts) {
-            if (Objects.isNull(combined)) {
-                combined = part;
-                continue;
-            }
-
-            combined = new OrExpression(combined, part);
-        }
-
-        return combined;
     }
 }

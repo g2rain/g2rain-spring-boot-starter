@@ -22,7 +22,6 @@ public class DefaultDataPermissionPolicyResolver implements DataPermissionPolicy
     public DataPermissionPolicyResolveResult resolve(Long organId, String moduleCode, String tableName) {
         Long userId = PrincipalContextHolder.getUserId();
         String deptPath = PrincipalContextHolder.getDeptPath();
-
         if (Objects.isNull(userId) || !StringUtils.hasText(deptPath)) {
             return null;
         }

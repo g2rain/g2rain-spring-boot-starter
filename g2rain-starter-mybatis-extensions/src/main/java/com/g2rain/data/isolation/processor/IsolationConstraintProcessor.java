@@ -1,11 +1,14 @@
 package com.g2rain.data.isolation.processor;
 
+import com.g2rain.common.enums.OrganType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.data.isolation.DataIsolationCache;
 import com.g2rain.data.isolation.DataScopeExaminer;
+import com.g2rain.data.isolation.enums.IsolationErrorCode;
 import com.g2rain.data.isolation.model.DataIsolationMeta;
 import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
+import com.g2rain.data.isolation.sql.DataPermissionConditionBuilder;
 import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
 import com.g2rain.data.isolation.util.IsolationOrganSupport;
 import com.g2rain.mybatis.extension.InvocationContext;
@@ -42,7 +45,6 @@ import java.util.Objects;
  * @author alpha
  * @since 2026/3/8
  */
-@Deprecated
 public class IsolationConstraintProcessor extends PrepareProcessor {
 
     /**
@@ -85,7 +87,11 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
         }
 
         // 运营公司不进行拦截
-        return !PrincipalContextHolder.isAdminCompany();
+        if (PrincipalContextHolder.isAdminCompany()) {
+            return false;
+        }
+
+        return OrganType.isTenant(PrincipalContextHolder.getOrganType());
     }
 
     @Override
@@ -104,28 +110,10 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
             return;
         }
 
-        Object parameter = statementContext.boundSql().getParameterObject();
-        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId(meta, statementContext.configuration(), parameter);
+        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId();
+        // 这里暂时用不上, 不过保留, 后续对于公司、渠道商、服务商等类型的机构可能会继续使用
         if (!dataScopeExaminer.isOrganInScope(targetOrganId)) {
-            throw new BusinessException(com.g2rain.data.isolation.enums.IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
-        }
-
-        Expression permissionExpression = null;
-        if (meta.hasDynamicPolicy()) {
-            DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
-                targetOrganId, meta.getIsolationModule(), meta.getIsolationTable()
-            );
-            Table table = null;
-            try {
-                Statement statement = SqlParserDelegate.parse(statementContext.sqlContext().sql());
-                if (statement instanceof Update update) {
-                    table = update.getTable();
-                } else if (statement instanceof Delete delete) {
-                    table = delete.getTable();
-                }
-            } catch (JSQLParserException e) {
-                throw new SQLException(e);
-            }
+            throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
         }
 
         try {
@@ -136,14 +124,16 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
                     update.getTable(),
                     update.getWhere(),
                     meta.getOrganIdColumnName(),
-                    targetOrganId
+                    targetOrganId,
+                    buildWriteCondition(targetOrganId, meta, update.getTable())
                 ));
             } else if (statement instanceof Delete delete) {
                 delete.setWhere(this.andExpression(
                     delete.getTable(),
                     delete.getWhere(),
                     meta.getOrganIdColumnName(),
-                    targetOrganId
+                    targetOrganId,
+                    buildWriteCondition(targetOrganId, meta, delete.getTable())
                 ));
             }
 
@@ -163,11 +153,39 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
         return this.order;
     }
 
+    private Expression buildWriteCondition(Long targetOrganId, DataIsolationMeta meta, Table table) {
+        if (!meta.hasDynamicPolicy()) {
+            return null;
+        }
+
+        DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
+            targetOrganId, meta.getIsolationModule(), meta.getIsolationTable()
+        );
+
+        return DataPermissionConditionBuilder.buildWriteCondition(table, meta, policy);
+    }
+
     /**
-     * 生成并拼接组织隔离条件，以及可选的数据权限策略条件。
+     * 生成并拼接组织隔离条件。
+     *
+     * @param table        主表
+     * @param where        原始 where 条件
+     * @param columnName   组织字段名
+     * @param whereSegment 组织字段值
+     * @return 拼接后的 where 表达式
      */
-    private Expression andExpression(Table table, Expression where, final String columnName, final Long whereSegment) {
-        Expression combined = buildOrganExpression(table, columnName, whereSegment);
+    private Expression andExpression(Table table, Expression where, final String columnName, final Long whereSegment, Expression permissionExpr) {
+        //获得 where 条件表达式
+        StringBuilder column = new StringBuilder();
+        if (Objects.nonNull(table.getAlias())) {
+            column.append(table.getAlias().getName()).append(".");
+        }
+
+        Expression combined = new EqualsTo(new Column(column.append(columnName).toString()), new LongValue(whereSegment));
+        if (Objects.nonNull(permissionExpr)) {
+            combined = new AndExpression(new ParenthesedExpressionList<>(combined), new ParenthesedExpressionList<>(permissionExpr));
+        }
+
         if (Objects.isNull(where)) {
             return combined;
         }
@@ -177,14 +195,5 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
         }
 
         return new AndExpression(where, combined);
-    }
-
-    private Expression buildOrganExpression(Table table, String columnName, Long whereSegment) {
-        StringBuilder column = new StringBuilder();
-        if (Objects.nonNull(table.getAlias())) {
-            column.append(table.getAlias().getName()).append(".");
-        }
-
-        return new EqualsTo(new Column(column.append(columnName).toString()), new LongValue(whereSegment));
     }
 }

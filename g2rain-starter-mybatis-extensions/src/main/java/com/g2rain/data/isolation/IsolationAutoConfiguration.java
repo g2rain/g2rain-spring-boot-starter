@@ -1,7 +1,7 @@
 package com.g2rain.data.isolation;
 
 
-import com.g2rain.data.isolation.processor.IsolationInsertProcessor;
+import com.g2rain.data.isolation.processor.IsolationConstraintProcessor;
 import com.g2rain.data.isolation.processor.IsolationQueryProcessor;
 import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
 import com.g2rain.data.isolation.support.CachedDataScopeExaminer;
@@ -12,6 +12,7 @@ import com.g2rain.data.isolation.support.DefaultDataScopeExaminer;
 import com.g2rain.data.isolation.support.OrganHierarchyOpenFeign;
 import com.g2rain.data.isolation.support.OrganHierarchyRestClient;
 import com.g2rain.mybatis.extension.ExecutorCompositeInterceptor;
+import com.g2rain.mybatis.extension.StatementHandlerCompositeInterceptor;
 import com.g2rain.mybatis.pagination.PaginationQueryProcessor;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
@@ -273,10 +274,10 @@ public class IsolationAutoConfiguration {
          * 缓存增强的数据权限策略解析器。
          */
         @Bean
-        @ConditionalOnBean(DataPermissionPolicyResolver.class)
+        @ConditionalOnBean(DataPermissionPolicyClient.class)
         @ConditionalOnMissingBean(CachedDataPermissionPolicyResolver.class)
-        public CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver(DataPermissionPolicyResolver dataPermissionPolicyResolver) {
-            return new CachedDataPermissionPolicyResolver(dataPermissionPolicyResolver);
+        public CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver(DataPermissionPolicyClient dataPermissionPolicyClient) {
+            return new CachedDataPermissionPolicyResolver(dataPermissionPolicyClient);
         }
 
         /**
@@ -301,21 +302,44 @@ public class IsolationAutoConfiguration {
         @Bean
         @ConditionalOnMissingBean(IsolationQueryProcessor.class)
         @ConditionalOnBean({CachedDataScopeExaminer.class, CachedDataPermissionPolicyResolver.class})
-        public IsolationQueryProcessor isolationQueryProcessor(CachedDataScopeExaminer cachedDataScopeExaminer, CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
+        public IsolationQueryProcessor isolationQueryProcessor(
+            CachedDataScopeExaminer cachedDataScopeExaminer,
+            CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
+
             return new IsolationQueryProcessor(cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, 10000);
         }
 
         /**
-         * 插入隔离处理器。
+         * 更新/删除约束处理器。
          *
          * @param cachedDataScopeExaminer 缓存校验器
-         * @return 插入隔离处理器
+         * @return 约束处理器
          */
         @Bean
-        @ConditionalOnMissingBean(IsolationInsertProcessor.class)
+        @ConditionalOnMissingBean(IsolationConstraintProcessor.class)
         @ConditionalOnBean({CachedDataScopeExaminer.class, CachedDataPermissionPolicyResolver.class})
-        public IsolationInsertProcessor isolationInsertProcessor(CachedDataScopeExaminer cachedDataScopeExaminer, CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
-            return new IsolationInsertProcessor(cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, 10000);
+        public IsolationConstraintProcessor isolationConstraintProcessor(
+            CachedDataScopeExaminer cachedDataScopeExaminer,
+            CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
+
+            return new IsolationConstraintProcessor(cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, 10000);
+        }
+
+        /**
+         * StatementHandler 组合拦截器，挂载 SQL prepare 阶段处理器。
+         *
+         * @param isolationConstraintProcessor 更新/删除约束处理器
+         * @return StatementHandler 组合拦截器
+         */
+        @Bean
+        @ConditionalOnBean(IsolationConstraintProcessor.class)
+        @ConditionalOnMissingBean(StatementHandlerCompositeInterceptor.class)
+        public StatementHandlerCompositeInterceptor statementHandlerCompositeInterceptor(
+            IsolationConstraintProcessor isolationConstraintProcessor
+        ) {
+            StatementHandlerCompositeInterceptor interceptor = new StatementHandlerCompositeInterceptor();
+            interceptor.addPluginProcessor(isolationConstraintProcessor);
+            return interceptor;
         }
 
         /**
@@ -337,21 +361,18 @@ public class IsolationAutoConfiguration {
      * 以适配启用/禁用数据隔离或用户覆盖默认 Bean 的场景。
      * </p>
      *
-     * @param paginationQueryProcessor         分页处理器
-     * @param isolationInsertProcessorProvider 插入隔离处理器提供者
-     * @param isolationQueryProcessorProvider  查询隔离处理器提供者
+     * @param paginationQueryProcessor        分页处理器
+     * @param isolationQueryProcessorProvider 查询隔离处理器提供者
      * @return Executor 组合拦截器
      */
     @Bean
     @ConditionalOnMissingBean(ExecutorCompositeInterceptor.class)
     public ExecutorCompositeInterceptor executorCompositeInterceptor(
         PaginationQueryProcessor paginationQueryProcessor,
-        ObjectProvider<IsolationInsertProcessor> isolationInsertProcessorProvider,
         ObjectProvider<IsolationQueryProcessor> isolationQueryProcessorProvider) {
 
         ExecutorCompositeInterceptor interceptor = new ExecutorCompositeInterceptor();
         interceptor.addPluginProcessor(paginationQueryProcessor);
-        isolationInsertProcessorProvider.ifAvailable(interceptor::addPluginProcessor);
         isolationQueryProcessorProvider.ifAvailable(interceptor::addPluginProcessor);
         return interceptor;
     }
