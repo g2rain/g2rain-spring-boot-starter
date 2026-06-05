@@ -3,6 +3,7 @@ package com.g2rain.web.interceptors;
 
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.exception.SystemErrorCode;
+import com.g2rain.common.utils.Strings;
 import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.web.HttpRequestWrapper;
 import com.g2rain.web.interceptors.annotations.IdentityInject;
@@ -32,7 +33,7 @@ import java.util.function.Supplier;
  *
  * <p><b>使用示例：</b></p>
  * <pre>{@code
- * @IdentityInject(userIdRequire = true, organIdRequire = true)
+ * @IdentityInject(userIdPropertyName = "userId", organIdPropertyName = "organId")
  * @GetMapping("/api/data")
  * public String getData(String userId, String organId) {
  *     // userId 和 organId 会自动注入，无需前端传参
@@ -73,25 +74,23 @@ public record IdentityParamInjector() implements HandlerInterceptor {
         }
 
         // 根据注解要求注入参数
-        injectParam(req, "passportId", identityInject.passportIdRequire(), PrincipalContextHolder::getPassportId);
-        injectParam(req, "userId", identityInject.userIdRequire(), PrincipalContextHolder::getUserId);
-        injectParam(req, "organId", identityInject.organIdRequire(), PrincipalContextHolder::getOrganId);
-        injectParam(req, "applicationId", identityInject.applicationIdRequire(), PrincipalContextHolder::getApplicationId);
-        injectParam(req, "applicationOrganId", identityInject.applicationOrganIdRequire(), PrincipalContextHolder::getApplicationOrganId);
+        injectParam(req, identityInject.passportIdPropertyName(), PrincipalContextHolder::getPassportId);
+        injectParam(req, identityInject.userIdPropertyName(), PrincipalContextHolder::getUserId);
+        injectParam(req, identityInject.organIdPropertyName(), PrincipalContextHolder::getOrganId);
+        injectParam(req, identityInject.applicationIdPropertyName(), PrincipalContextHolder::getApplicationId);
+        injectParam(req, identityInject.applicationOrganIdPropertyName(), PrincipalContextHolder::getApplicationOrganId);
         return true;
     }
 
     /**
      * 根据条件向请求中添加参数。
      *
-     * @param req      请求包装对象
-     * @param name     参数名
-     * @param require  是否需要注入
-     * @param supplier 获取参数值的函数
+     * @param req          请求包装对象
+     * @param propertyName 注入参数名，为空时不注入
+     * @param supplier     获取参数值的函数
      */
-    @SuppressWarnings("java:S4276")
-    private void injectParam(HttpRequestWrapper req, String name, boolean require, Supplier<Long> supplier) {
-        if (!require) {
+    private void injectParam(HttpRequestWrapper req, String propertyName, Supplier<Long> supplier) {
+        if (Strings.isBlank(propertyName)) {
             return;
         }
 
@@ -100,6 +99,6 @@ public record IdentityParamInjector() implements HandlerInterceptor {
             return;
         }
 
-        req.addParameter(name, value.toString());
+        req.addParameter(propertyName, value.toString());
     }
 }
