@@ -83,7 +83,7 @@
     </modules>
 
     <properties>
-        <revision>1.0.1</revision>
+        <revision>1.0.2</revision>
         <!--
             spring boot 4.0.5 引入的是3.1.0 但是3.1.0 有漏洞, 所以升级到3.1.1,
             后续如果升级spring boot 版本, 酌情是否删掉这个属性
@@ -94,7 +94,7 @@
         <commons.lang3.version>3.20.0</commons.lang3.version>
         <commons.fileupload.version>1.6.0</commons.fileupload.version>
         <redisson.starter.version>4.3.0</redisson.starter.version>
-        <g2rain.common.version>1.0.4</g2rain.common.version>
+        <g2rain.common.version>1.0.5</g2rain.common.version>
         <g2rain.mybatis.extension.version>1.0.4</g2rain.mybatis.extension.version>
         <g2rain.mybatis.pagination.version>1.0.4</g2rain.mybatis.pagination.version>
         <org.mybatis.version>3.5.19</org.mybatis.version>
