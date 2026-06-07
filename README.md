@@ -164,6 +164,8 @@ spring:
 ```java
 @DataIsolation(
     permissionTableName = "order",
+    isolationModule = "order",
+    isolationTable = "order",
     userIdColumnName = "owner_user_id",
     deptPathColumnName = "dept_path"
 )
