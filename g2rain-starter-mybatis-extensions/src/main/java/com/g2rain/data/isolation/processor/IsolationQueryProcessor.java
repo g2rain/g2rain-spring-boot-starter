@@ -55,6 +55,11 @@ public class IsolationQueryProcessor extends QueryProcessor {
     private final CachedDataPermissionPolicyResolver dataPermissionPolicyResolver;
 
     /**
+     * 权限模型模块编码，对应 {@code data_permission_model.module_code}。
+     */
+    private final String policyModuleCode;
+
+    /**
      * 拦截器顺序
      */
     private final int order;
@@ -64,9 +69,15 @@ public class IsolationQueryProcessor extends QueryProcessor {
      *
      * @param order 拦截器执行顺序
      */
-    public IsolationQueryProcessor(DataScopeExaminer dataScopeExaminer, CachedDataPermissionPolicyResolver dataPermissionPolicyResolver, int order) {
+    public IsolationQueryProcessor(
+        DataScopeExaminer dataScopeExaminer,
+        CachedDataPermissionPolicyResolver dataPermissionPolicyResolver,
+        String policyModuleCode,
+        int order
+    ) {
         this.dataScopeExaminer = dataScopeExaminer;
         this.dataPermissionPolicyResolver = dataPermissionPolicyResolver;
+        this.policyModuleCode = policyModuleCode;
         this.order = order;
     }
 
@@ -119,7 +130,7 @@ public class IsolationQueryProcessor extends QueryProcessor {
             Expression permissionExpression = null;
             if (meta.hasDynamicPolicy()) {
                 DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
-                    targetOrganId, meta.getIsolationModule(), meta.getIsolationTable()
+                    targetOrganId, policyModuleCode, meta.getPermissionTableName()
                 );
                 permissionExpression = DataPermissionConditionBuilder.buildReadCondition(table, meta, policy);
             }

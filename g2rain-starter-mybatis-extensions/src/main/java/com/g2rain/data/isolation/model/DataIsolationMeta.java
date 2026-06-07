@@ -19,16 +19,6 @@ import org.springframework.util.StringUtils;
 public class DataIsolationMeta {
 
     /**
-     * 隔离注册模块编码，对应 {@code data_permission_model.module_code}。
-     */
-    private String isolationModule;
-
-    /**
-     * 隔离注册表名，对应 {@code data_permission_model.table_name}。
-     */
-    private String isolationTable;
-
-    /**
      * 机构字段名（库表列）。
      */
     private String organIdColumnName;
@@ -37,6 +27,11 @@ public class DataIsolationMeta {
      * 机构字段名（实体属性）。
      */
     private String organIdPropertyName;
+
+    /**
+     * 权限模型表名，对应 {@code data_permission_model.table_name}。
+     */
+    private String permissionTableName;
 
     /**
      * 用户字段名（库表列），为空表示不启用用户维度。
@@ -56,20 +51,19 @@ public class DataIsolationMeta {
      */
     public static DataIsolationMeta genObjectByAnnotation(DataIsolation dataIsolation) {
         DataIsolationMeta meta = new DataIsolationMeta();
-        meta.setIsolationModule(dataIsolation.isolationModule());
-        meta.setIsolationTable(dataIsolation.isolationTable());
         meta.setOrganIdColumnName(dataIsolation.organIdColumnName());
         meta.setOrganIdPropertyName(dataIsolation.organIdPropertyName());
+        meta.setPermissionTableName(dataIsolation.permissionTableName());
         meta.setUserIdColumnName(dataIsolation.userIdColumnName());
         meta.setDeptPathColumnName(dataIsolation.deptPathColumnName());
         return meta;
     }
 
     /**
-     * 是否启用动态权限策略（module + table 均已配置）。
+     * 是否启用动态权限策略（已配置 {@code permissionTableName}）
      */
     public boolean hasDynamicPolicy() {
-        return StringUtils.hasText(isolationModule) && StringUtils.hasText(isolationTable);
+        return StringUtils.hasText(permissionTableName);
     }
 
     /**

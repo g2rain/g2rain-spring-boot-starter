@@ -10,7 +10,6 @@ import net.sf.jsqlparser.expression.StringValue;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
 import net.sf.jsqlparser.expression.operators.relational.LikeExpression;
-import net.sf.jsqlparser.expression.operators.relational.ParenthesedExpressionList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
@@ -44,14 +43,14 @@ public final class DataPermissionConditionBuilder {
         String tablePrefix = Objects.nonNull(table.getAlias()) ? table.getAlias().getName() + "." : "";
         List<Expression> parts = new ArrayList<>();
 
-        if (meta.hasUserColumn()) {
-            Long userId = PrincipalContextHolder.getUserId();
-            if (Objects.nonNull(userId)) {
-                parts.add(new EqualsTo(new Column(tablePrefix + meta.getUserIdColumnName()), new LongValue(userId)));
-            }
-        }
-
         if (Objects.nonNull(policy)) {
+            if (meta.hasUserColumn()) {
+                Long userId = PrincipalContextHolder.getUserId();
+                if (Objects.nonNull(userId)) {
+                    parts.add(new EqualsTo(new Column(tablePrefix + meta.getUserIdColumnName()), new LongValue(userId)));
+                }
+            }
+
             boolean groupAllowed = read ? policy.isGroupRead() : policy.isGroupWrite();
             boolean otherAllowed = read ? policy.isOtherRead() : policy.isOtherWrite();
 

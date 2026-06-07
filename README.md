@@ -155,10 +155,15 @@ g2rain:
       enabled: true   # 部门隔离时需要，向 Principal 写入 deptPath
 ```
 
+```yaml
+spring:
+  application:
+    name: g2rain-order   # 须与 data_permission_model.module_code 一致
+```
+
 ```java
 @DataIsolation(
-    isolationModule = "order",
-    isolationTable = "order",
+    permissionTableName = "order",
     userIdColumnName = "owner_user_id",
     deptPathColumnName = "dept_path"
 )
