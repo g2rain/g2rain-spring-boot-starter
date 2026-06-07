@@ -58,6 +58,11 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
     private final CachedDataPermissionPolicyResolver dataPermissionPolicyResolver;
 
     /**
+     * 权限模型模块编码，对应 {@code data_permission_model.module_code}。
+     */
+    private final String policyModuleCode;
+
+    /**
      * 拦截器顺序
      */
     private final int order;
@@ -67,9 +72,15 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
      *
      * @param order 拦截器执行顺序
      */
-    public IsolationConstraintProcessor(DataScopeExaminer dataScopeExaminer, CachedDataPermissionPolicyResolver dataPermissionPolicyResolver, int order) {
+    public IsolationConstraintProcessor(
+        DataScopeExaminer dataScopeExaminer,
+        CachedDataPermissionPolicyResolver dataPermissionPolicyResolver,
+        String policyModuleCode,
+        int order
+    ) {
         this.dataScopeExaminer = dataScopeExaminer;
         this.dataPermissionPolicyResolver = dataPermissionPolicyResolver;
+        this.policyModuleCode = policyModuleCode;
         this.order = order;
     }
 
@@ -159,7 +170,7 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
         }
 
         DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
-            targetOrganId, meta.getIsolationModule(), meta.getIsolationTable()
+            targetOrganId, policyModuleCode, meta.getPermissionTableName()
         );
 
         return DataPermissionConditionBuilder.buildWriteCondition(table, meta, policy);

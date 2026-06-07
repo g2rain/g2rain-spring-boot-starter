@@ -8,7 +8,7 @@
 |------|------|
 | 分页 | 通过 `PageContext` 触发 SQL 自动分页与 count 统计 |
 | 机构（租户）隔离 | 对 SELECT / UPDATE / DELETE 自动追加 `organ_id = 当前机构` 条件 |
-| 部门数据权限 | 配置 `isolationModule` + `isolationTable` 后，向 `g2rain-department` 解析策略，按部门路径 / 用户 / Other 规则过滤 |
+| 部门数据权限 | 配置 `permissionTableName` 后，以 `spring.application.name` 为 `module_code` 向 `g2rain-department` 解析策略，按部门路径 / 用户 / Other 规则过滤 |
 | 机构层级校验 | 向 `g2rain-basis` 校验目标机构是否在当前登录机构可访问范围内 |
 
 ## 依赖引入
@@ -91,7 +91,7 @@ g2rain:
 
 #### 仅机构隔离
 
-不配置 `isolationModule` / `isolationTable` 时，只做机构字段过滤，不调用部门策略服务：
+不配置 `permissionTableName` 时，只做机构字段过滤，不调用部门策略服务：
 
 ```java
 @DataIsolation
@@ -105,12 +105,18 @@ public interface UserMapper {
 
 #### 机构 + 部门动态权限
 
-`isolationModule` / `isolationTable` 须与 `g2rain-department` 中 `data_permission_model.module_code` / `table_name` 一致：
+`spring.application.name` 须与 `g2rain-department` 中 `data_permission_model.module_code` 一致；
+`permissionTableName` 须与 `data_permission_model.table_name` 一致：
+
+```yaml
+spring:
+  application:
+    name: g2rain-order
+```
 
 ```java
 @DataIsolation(
-    isolationModule = "order",
-    isolationTable = "order",
+    permissionTableName = "order",
     organIdColumnName = "organ_id",
     organIdPropertyName = "organId",
     userIdColumnName = "owner_user_id",
@@ -127,17 +133,18 @@ public interface OrderMapper {
 
 | 属性 | 默认值 | 说明 |
 |------|--------|------|
-| `isolationModule` | `""` | 权限模型模块编码；为空则不查动态策略 |
-| `isolationTable` | `""` | 权限模型表名；为空则不查动态策略 |
+| `permissionTableName` | `""` | 权限模型表名；为空则不查动态策略 |
 | `organIdColumnName` | `organ_id` | 机构列名 |
 | `organIdPropertyName` | `organId` | 实体机构属性名（INSERT 场景预留） |
 | `userIdColumnName` | `""` | 用户列名；非空时策略条件允许按当前用户过滤 |
 | `deptPathColumnName` | `""` | 部门路径列名；非空且策略允许本组读取/写入时，按 `dept_path LIKE '{deptPath}%'` 过滤 |
 
+模块编码 `module_code` 由框架自动取 `spring.application.name`，无需在注解中配置。
+
 #### 方法级豁免
 
 ```java
-@DataIsolation(isolationModule = "order", isolationTable = "order")
+@DataIsolation(permissionTableName = "order")
 @Mapper
 public interface OrderMapper {
 
@@ -148,7 +155,7 @@ public interface OrderMapper {
 
 ### 权限条件构建规则（读）
 
-当 `isolationModule` + `isolationTable` 均已配置时，SELECT 额外条件由 `DataPermissionConditionBuilder` 生成，各分支以 **OR** 组合：
+当 `permissionTableName` 已配置时，SELECT 额外条件由 `DataPermissionConditionBuilder` 生成，各分支以 **OR** 组合：
 
 1. **用户维度**：配置了 `userIdColumnName` 且 Principal 有 `userId` → `{userIdColumn} = 当前用户`
 2. **部门维度**：策略 `groupRead=true` 且配置了 `deptPathColumnName`、Principal 有 `deptPath` → 对逗号分隔的每个部门路径生成 `dept_path LIKE 'path%'`
@@ -156,7 +163,7 @@ public interface OrderMapper {
 
 UPDATE / DELETE 使用对应的 `groupWrite` / `otherWrite` 与 `buildWriteCondition`。
 
-策略解析请求携带：`organId`、`userId`、`deptPath`（来自 Principal）、`moduleCode`、`tableName`。
+策略解析请求携带：`organId`、`userId`、`deptPath`（来自 Principal）、`moduleCode`（来自 `spring.application.name`）、`tableName`（来自 `permissionTableName`）。
 
 ### 部门路径前置条件
 
@@ -195,7 +202,7 @@ g2rain:
 | 隔离完全不生效 | 是否租户前台请求；Mapper 是否标注 `@DataIsolation`；`g2rain.data.isolation.enabled` 是否为 `true` |
 | 报 `isolation.50001` 租户不存在 | `PrincipalContextHolder.getOrganId()` 为空，检查 `web-infra` 过滤器 / 登录态 |
 | 报 `isolation.50002` 租户不在范围 | 当前机构无权访问目标机构，检查 `g2rain-basis` 层级关系接口 |
-| 只有机构隔离、没有部门过滤 | 是否配置 `isolationModule`/`isolationTable`；是否引入 `department-principal`；Principal 是否有 `deptPath` |
+| 只有机构隔离、没有部门过滤 | 是否配置 `permissionTableName`；`spring.application.name` 是否与 `module_code` 一致；是否引入 `department-principal`；Principal 是否有 `deptPath` |
 | 部门策略不更新 | 策略结果有本地 Caffeine 缓存，变更后需按 `PolicyInvalidationLevel` 失效或重启 |
 | SELECT 报 SQL 解析失败 | 暂不支持复杂 SELECT（如子查询 FROM、UNION）；简化 SQL 或对该方法使用 `@IgnoreIsolation` |
 | 分页与隔离冲突 | 框架内部 count / 权限 SQL 通过 `PagingEscape` 逃逸分页上下文，一般无需手动处理 |

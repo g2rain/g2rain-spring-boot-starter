@@ -19,6 +19,7 @@ import org.mybatis.spring.boot.autoconfigure.ConfigurationCustomizer;
 import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.BeanFactoryAnnotationUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -294,9 +295,13 @@ public class IsolationAutoConfiguration {
 
         /**
          * 查询隔离处理器。
+         * <p>
+         * {@code applicationName} 作为权限模型 {@code module_code} 传入策略解析。
+         * </p>
          *
          * @param cachedDataScopeExaminer            缓存校验器
          * @param cachedDataPermissionPolicyResolver 缓存策略解析器
+         * @param applicationName                    当前微服务名，对应 {@code spring.application.name}
          * @return 查询隔离处理器
          */
         @Bean
@@ -304,15 +309,23 @@ public class IsolationAutoConfiguration {
         @ConditionalOnBean({CachedDataScopeExaminer.class, CachedDataPermissionPolicyResolver.class})
         public IsolationQueryProcessor isolationQueryProcessor(
             CachedDataScopeExaminer cachedDataScopeExaminer,
-            CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
+            CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver,
+            @Value("${spring.application.name:}") String applicationName) {
 
-            return new IsolationQueryProcessor(cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, 10000);
+            return new IsolationQueryProcessor(
+                cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, applicationName, 10000
+            );
         }
 
         /**
          * 更新/删除约束处理器。
+         * <p>
+         * {@code applicationName} 作为权限模型 {@code module_code} 传入策略解析。
+         * </p>
          *
-         * @param cachedDataScopeExaminer 缓存校验器
+         * @param cachedDataScopeExaminer            缓存校验器
+         * @param cachedDataPermissionPolicyResolver 缓存策略解析器
+         * @param applicationName                    当前微服务名，对应 {@code spring.application.name}
          * @return 约束处理器
          */
         @Bean
@@ -320,9 +333,12 @@ public class IsolationAutoConfiguration {
         @ConditionalOnBean({CachedDataScopeExaminer.class, CachedDataPermissionPolicyResolver.class})
         public IsolationConstraintProcessor isolationConstraintProcessor(
             CachedDataScopeExaminer cachedDataScopeExaminer,
-            CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver) {
+            CachedDataPermissionPolicyResolver cachedDataPermissionPolicyResolver,
+            @Value("${spring.application.name:}") String applicationName) {
 
-            return new IsolationConstraintProcessor(cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, 10000);
+            return new IsolationConstraintProcessor(
+                cachedDataScopeExaminer, cachedDataPermissionPolicyResolver, applicationName, 10000
+            );
         }
 
         /**
