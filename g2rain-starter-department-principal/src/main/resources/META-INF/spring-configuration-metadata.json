@@ -1,0 +1,42 @@
+{
+    "groups": [
+        {
+            "name": "g2rain.principal.department",
+            "type": "com.g2rain.department.principal.DepartmentPrincipalProperties",
+            "sourceType": "com.g2rain.department.principal.DepartmentPrincipalProperties",
+            "description": "部门 Principal 增强相关配置"
+        }
+    ],
+    "properties": [
+        {
+            "name": "g2rain.principal.department.enabled",
+            "type": "java.lang.Boolean",
+            "description": "是否启用部门 Principal 增强",
+            "defaultValue": true
+        },
+        {
+            "name": "g2rain.principal.department.service-name",
+            "type": "java.lang.String",
+            "description": "目标微服务名称，用于 Feign/RestClient 负载均衡调用",
+            "defaultValue": "g2rain-department"
+        },
+        {
+            "name": "g2rain.principal.department.service-url",
+            "type": "java.lang.String",
+            "description": "目标微服务的绝对地址，配置后覆盖 service-name",
+            "defaultValue": ""
+        },
+        {
+            "name": "g2rain.principal.department.service-path",
+            "type": "java.lang.String",
+            "description": "接口的基础上下文路径",
+            "defaultValue": "department_user_relation"
+        },
+        {
+            "name": "g2rain.principal.department.path-business",
+            "type": "java.lang.String",
+            "description": "Principal 增强信息接口路径",
+            "defaultValue": "/principal_enrichment"
+        }
+    ]
+}

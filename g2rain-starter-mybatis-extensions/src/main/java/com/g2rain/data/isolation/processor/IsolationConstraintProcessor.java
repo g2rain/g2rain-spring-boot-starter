@@ -1,12 +1,17 @@
-package com.g2rain.data.isolation;
+package com.g2rain.data.isolation.processor;
 
 import com.g2rain.common.enums.OrganType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.web.PrincipalContextHolder;
+import com.g2rain.data.isolation.DataIsolationCache;
+import com.g2rain.data.isolation.DataScopeExaminer;
 import com.g2rain.data.isolation.enums.IsolationErrorCode;
 import com.g2rain.data.isolation.model.DataIsolationMeta;
+import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
+import com.g2rain.data.isolation.sql.DataPermissionConditionBuilder;
+import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
+import com.g2rain.data.isolation.util.IsolationOrganSupport;
 import com.g2rain.mybatis.extension.InvocationContext;
-import com.g2rain.mybatis.extension.IsolationFieldExtractor;
 import com.g2rain.mybatis.extension.PrepareProcessor;
 import com.g2rain.mybatis.extension.SqlHelper;
 import com.g2rain.mybatis.extension.SqlParserDelegate;
@@ -25,18 +30,16 @@ import net.sf.jsqlparser.statement.update.Update;
 import org.apache.ibatis.executor.statement.StatementHandler;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.session.Configuration;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * 数据隔离约束处理器。
  * <p>
  * 处理 UPDATE / DELETE 场景，在 SQL 的 WHERE 条件中自动追加组织隔离约束，
- * 防止越权修改或删除非授权组织数据。
+ * 并在配置动态策略时追加数据权限过滤条件，防止越权修改或删除非授权数据。
  * </p>
  *
  * @author alpha
@@ -50,6 +53,16 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
     private final DataScopeExaminer dataScopeExaminer;
 
     /**
+     * 数据权限策略解析器。
+     */
+    private final CachedDataPermissionPolicyResolver dataPermissionPolicyResolver;
+
+    /**
+     * 权限模型模块编码，对应 {@code data_permission_model.module_code}。
+     */
+    private final String policyModuleCode;
+
+    /**
      * 拦截器顺序
      */
     private final int order;
@@ -59,8 +72,15 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
      *
      * @param order 拦截器执行顺序
      */
-    public IsolationConstraintProcessor(DataScopeExaminer dataScopeExaminer, int order) {
+    public IsolationConstraintProcessor(
+        DataScopeExaminer dataScopeExaminer,
+        CachedDataPermissionPolicyResolver dataPermissionPolicyResolver,
+        String policyModuleCode,
+        int order
+    ) {
         this.dataScopeExaminer = dataScopeExaminer;
+        this.dataPermissionPolicyResolver = dataPermissionPolicyResolver;
+        this.policyModuleCode = policyModuleCode;
         this.order = order;
     }
 
@@ -78,7 +98,11 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
         }
 
         // 运营公司不进行拦截
-        return !PrincipalContextHolder.isAdminCompany();
+        if (PrincipalContextHolder.isAdminCompany()) {
+            return false;
+        }
+
+        return OrganType.isTenant(PrincipalContextHolder.getOrganType());
     }
 
     @Override
@@ -97,41 +121,8 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
             return;
         }
 
-        // 获取 ScopedValue 的调用链上下文操作目标组织标识
-        Long targetOrganId = PrincipalContextHolder.getTargetOrganId();
-
-        // 如果是租户直接用租户的组织标识
-        if (Objects.isNull(targetOrganId) && OrganType.isTenant(PrincipalContextHolder.getOrganType())) {
-            targetOrganId = PrincipalContextHolder.getOrganId();
-        }
-
-        // 获取执行 Mapper 接口方法的参数中的目标组织标识
-        if (Objects.isNull(targetOrganId)) {
-            // 1. 获取configuration
-            Configuration configuration = statementContext.configuration();
-
-            /*
-             * 2. 通过 BoundSql 对象（它持有原始 SQL 和 绑定的参数）提取 parameterObject
-             * 这个对象就是 MyBatis 准备设置到 PreparedStatement 中的原始参数（实体、Map 或 基础类型）
-             */
-            Object parameter = statementContext.boundSql().getParameterObject();
-
-            // 3. 获取数据隔离的实际参数名称
-            String propertyName = meta.getOrganIdPropertyName();
-
-            Set<Object> values = IsolationFieldExtractor.extractValues(configuration, parameter, propertyName);
-            if (values.size() != 1) {
-                throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-            }
-
-            Object val = values.iterator().next();
-            targetOrganId = (val instanceof Number) ? ((Number) val).longValue() : null;
-        }
-
-        if (Objects.isNull(targetOrganId)) {
-            throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-        }
-
+        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId();
+        // 这里暂时用不上, 不过保留, 后续对于公司、渠道商、服务商等类型的机构可能会继续使用
         if (!dataScopeExaminer.isOrganInScope(targetOrganId)) {
             throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
         }
@@ -144,14 +135,16 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
                     update.getTable(),
                     update.getWhere(),
                     meta.getOrganIdColumnName(),
-                    targetOrganId
+                    targetOrganId,
+                    buildWriteCondition(targetOrganId, meta, update.getTable())
                 ));
             } else if (statement instanceof Delete delete) {
                 delete.setWhere(this.andExpression(
                     delete.getTable(),
                     delete.getWhere(),
                     meta.getOrganIdColumnName(),
-                    targetOrganId
+                    targetOrganId,
+                    buildWriteCondition(targetOrganId, meta, delete.getTable())
                 ));
             }
 
@@ -171,6 +164,18 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
         return this.order;
     }
 
+    private Expression buildWriteCondition(Long targetOrganId, DataIsolationMeta meta, Table table) {
+        if (!meta.hasDynamicPolicy()) {
+            return null;
+        }
+
+        DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
+            targetOrganId, policyModuleCode, meta.getPermissionTableName()
+        );
+
+        return DataPermissionConditionBuilder.buildWriteCondition(table, meta, policy);
+    }
+
     /**
      * 生成并拼接组织隔离条件。
      *
@@ -180,22 +185,26 @@ public class IsolationConstraintProcessor extends PrepareProcessor {
      * @param whereSegment 组织字段值
      * @return 拼接后的 where 表达式
      */
-    private Expression andExpression(Table table, Expression where, final String columnName, final Long whereSegment) {
+    private Expression andExpression(Table table, Expression where, final String columnName, final Long whereSegment, Expression permissionExpr) {
         //获得 where 条件表达式
         StringBuilder column = new StringBuilder();
         if (Objects.nonNull(table.getAlias())) {
             column.append(table.getAlias().getName()).append(".");
         }
 
-        final Expression expression = new EqualsTo(new Column(column.append(columnName).toString()), new LongValue(whereSegment));
+        Expression combined = new EqualsTo(new Column(column.append(columnName).toString()), new LongValue(whereSegment));
+        if (Objects.nonNull(permissionExpr)) {
+            combined = new AndExpression(new ParenthesedExpressionList<>(combined), new ParenthesedExpressionList<>(permissionExpr));
+        }
+
         if (Objects.isNull(where)) {
-            return expression;
+            return combined;
         }
 
         if (where instanceof OrExpression) {
-            return new AndExpression(new ParenthesedExpressionList<>(where), expression);
+            return new AndExpression(new ParenthesedExpressionList<>(where), combined);
         }
 
-        return new AndExpression(where, expression);
+        return new AndExpression(where, combined);
     }
 }

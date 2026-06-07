@@ -158,9 +158,9 @@ public class IdentityParamInjectorTest {
     // 测试用的控制器类
     static class TestController {
         @IdentityInject(
-            userIdRequire = true,
-            organIdRequire = true,
-            passportIdRequire = true
+            userIdPropertyName = "userId",
+            organIdPropertyName = "organId",
+            passportIdPropertyName = "passportId"
         )
         public void injectMethod() {
             // 需要注入身份参数的方法

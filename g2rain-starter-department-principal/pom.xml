@@ -1,0 +1,28 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.g2rain</groupId>
+        <artifactId>g2rain-spring-boot-starter</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>g2rain-starter-department-principal</artifactId>
+    <packaging>jar</packaging>
+
+    <name>g2rain-starter-department-principal</name>
+
+    <description>
+        G2Rain MyBatis Extensions Starter.
+        Provides automatic row-level multi-tenant data isolation based on MyBatis plugin for secure data access,
+        and supports built-in pagination functionality for query results.
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+</project>

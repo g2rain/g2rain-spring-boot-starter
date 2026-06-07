@@ -10,23 +10,23 @@ import java.lang.annotation.Target;
  *
  * <p>它通常配合 {@link com.g2rain.web.interceptors.IdentityParamInjector} 使用，在方法执行前自动注入所需的身份信息。</p>
  *
- * <p>属性说明：</p>
+ * <p>属性说明：各属性为注入参数名，非空时才会注入对应身份值，默认为空字符串（不注入）。</p>
  * <ul>
- *     <li>{@code organIdRequire} — 是否需要注入组织 ID，默认为 {@code false}。</li>
- *     <li>{@code passportIdRequire} — 是否需要注入账号 ID，默认为 {@code false}。</li>
- *     <li>{@code userIdRequire} — 是否需要注入用户 ID，默认为 {@code false}。</li>
- *     <li>{@code applicationIdRequire} — 是否需要注入应用 ID，默认为 {@code false}。</li>
- *     <li>{@code applicationOrganIdRequire} — 是否需要注入应用组织 ID，默认为 {@code false}。</li>
+ *     <li>{@code organIdPropertyName} — 组织 ID 参数名。</li>
+ *     <li>{@code passportIdPropertyName} — 账号 ID 参数名。</li>
+ *     <li>{@code userIdPropertyName} — 用户 ID 参数名。</li>
+ *     <li>{@code applicationIdPropertyName} — 应用 ID 参数名。</li>
+ *     <li>{@code applicationOrganIdPropertyName} — 应用组织 ID 参数名。</li>
  * </ul>
  *
  * <p><b>使用示例：</b></p>
  * <pre>{@code
  * @IdentityInject(
- *     organIdRequire = true,
- *     userIdRequire = true
+ *     organIdPropertyName = "organId",
+ *     userIdPropertyName = "userId"
  * )
- * public void processUserData() {
- *     // 方法执行时，organId 和 userId 将被自动注入
+ * public void processUserData(String organId, String userId) {
+ *     // organId 和 userId 将被自动注入
  * }
  * }</pre>
  *
@@ -40,37 +40,37 @@ import java.lang.annotation.Target;
 public @interface IdentityInject {
 
     /**
-     * 是否需要注入组织 ID。
+     * 组织 ID 注入参数名。
      *
-     * @return 默认 {@code false}
+     * @return 默认空字符串，不注入
      */
-    boolean organIdRequire() default false;
+    String organIdPropertyName() default "";
 
     /**
-     * 是否需要注入账号 ID。
+     * 账号 ID 注入参数名。
      *
-     * @return 默认 {@code false}
+     * @return 默认空字符串，不注入
      */
-    boolean passportIdRequire() default false;
+    String passportIdPropertyName() default "";
 
     /**
-     * 是否需要注入用户 ID。
+     * 用户 ID 注入参数名。
      *
-     * @return 默认 {@code false}
+     * @return 默认空字符串，不注入
      */
-    boolean userIdRequire() default false;
+    String userIdPropertyName() default "";
 
     /**
-     * 是否需要注入应用 ID。
+     * 应用 ID 注入参数名。
      *
-     * @return 默认 {@code false}
+     * @return 默认空字符串，不注入
      */
-    boolean applicationIdRequire() default false;
+    String applicationIdPropertyName() default "";
 
     /**
-     * 是否需要注入应用组织 ID。
+     * 应用组织 ID 注入参数名。
      *
-     * @return 默认 {@code false}
+     * @return 默认空字符串，不注入
      */
-    boolean applicationOrganIdRequire() default false;
+    String applicationOrganIdPropertyName() default "";
 }

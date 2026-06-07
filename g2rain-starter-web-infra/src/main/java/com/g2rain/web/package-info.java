@@ -48,7 +48,7 @@
  * public class DemoController {
  *
  *     @LoginGuard(require = true, anonymous = false)
- *     @IdentityInject(userIdRequire = true)
+ *     @IdentityInject(userIdPropertyName = "userId")
  *     @GetMapping("/api/demo")
  *     public Result<String> demo(@RequestParam String param) {
  *         return Result.success("Hello World");

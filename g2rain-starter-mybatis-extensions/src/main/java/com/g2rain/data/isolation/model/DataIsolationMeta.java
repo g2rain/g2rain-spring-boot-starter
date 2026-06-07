@@ -5,15 +5,10 @@ import com.g2rain.data.isolation.annotations.DataIsolation;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.util.StringUtils;
 
 /**
- * <p>数据隔离元信息类，用于封装租户隔离和应用隔离的配置信息。</p>
- * <p>通常通过 {@link DataIsolation} 注解生成对象，可用于数据隔离拦截器或服务中。</p>
- * <p>使用示例：</p>
- * <pre>{@code
- * DataIsolation dataIsolationAnnotation = ...;
- * DataIsolationMeta meta = DataIsolationMeta.genObjectByAnnotation(dataIsolationAnnotation);
- * }</pre>
+ * 数据隔离元信息，由 {@link DataIsolation} 注解解析生成，供拦截器运行时使用。
  *
  * @author alpha
  * @since 2025/10/13
@@ -24,39 +19,66 @@ import lombok.Setter;
 public class DataIsolationMeta {
 
     /**
-     * <p>租户隔离标志。</p>
-     * <p>{@code true} 表示启用租户隔离，{@code false} 表示不启用。</p>
-     */
-    private boolean organIdIsolation;
-
-    /**
-     * <p>租户列名。</p>
-     * <p>对应数据库表中的租户字段名，例如 {@code "tenant_id"}。</p>
+     * 机构字段名（库表列）。
      */
     private String organIdColumnName;
 
     /**
-     * <p>租户属性。</p>
-     * <p>对应实体类中的租户属性名，例如 {@code "tenantId"}。</p>
+     * 机构字段名（实体属性）。
      */
     private String organIdPropertyName;
 
     /**
-     * <p>根据 {@link DataIsolation} 注解生成 {@code DataIsolationMeta} 对象。</p>
-     * <p>从注解中提取各字段的配置信息，用于后续数据隔离处理。</p>
-     * <p>使用示例：</p>
-     * <pre>{@code
-     * DataIsolationMeta meta = DataIsolationMeta.genObjectByAnnotation(dataIsolation);
-     * }</pre>
+     * 权限模型表名，对应 {@code data_permission_model.table_name}。
+     */
+    private String permissionTableName;
+
+    /**
+     * 用户字段名（库表列），为空表示不启用用户维度。
+     */
+    private String userIdColumnName;
+
+    /**
+     * 部门路径字段名（库表列），为空表示不启用部门维度。
+     */
+    private String deptPathColumnName;
+
+    /**
+     * 根据 {@link DataIsolation} 注解生成元信息。
      *
-     * @param dataIsolation {@link DataIsolation} 注解实例
-     * @return 封装的 {@link DataIsolationMeta} 对象
+     * @param dataIsolation 数据隔离注解
+     * @return 数据隔离元信息
      */
     public static DataIsolationMeta genObjectByAnnotation(DataIsolation dataIsolation) {
         DataIsolationMeta meta = new DataIsolationMeta();
+        meta.setIsolationModule(dataIsolation.isolationModule());
+        meta.setIsolationTable(dataIsolation.isolationTable());
         meta.setOrganIdColumnName(dataIsolation.organIdColumnName());
-        meta.setOrganIdIsolation(dataIsolation.organIdIsolation());
         meta.setOrganIdPropertyName(dataIsolation.organIdPropertyName());
+        meta.setPermissionTableName(dataIsolation.permissionTableName());
+        meta.setUserIdColumnName(dataIsolation.userIdColumnName());
+        meta.setDeptPathColumnName(dataIsolation.deptPathColumnName());
         return meta;
+    }
+
+    /**
+     * 是否启用动态权限策略（已配置 {@code permissionTableName}）
+     */
+    public boolean hasDynamicPolicy() {
+        return StringUtils.hasText(permissionTableName);
+    }
+
+    /**
+     * 是否配置了用户维度字段。
+     */
+    public boolean hasUserColumn() {
+        return StringUtils.hasText(userIdColumnName);
+    }
+
+    /**
+     * 是否配置了部门维度字段。
+     */
+    public boolean hasDeptColumn() {
+        return StringUtils.hasText(deptPathColumnName);
     }
 }

@@ -1,35 +1,42 @@
-package com.g2rain.data.isolation;
+package com.g2rain.data.isolation.processor;
 
 import com.g2rain.common.enums.OrganType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.web.PrincipalContextHolder;
+import com.g2rain.data.isolation.DataIsolationCache;
+import com.g2rain.data.isolation.DataScopeExaminer;
 import com.g2rain.data.isolation.enums.IsolationErrorCode;
 import com.g2rain.data.isolation.model.DataIsolationMeta;
+import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
+import com.g2rain.data.isolation.sql.DataIsolationSelectVisitor;
+import com.g2rain.data.isolation.sql.DataPermissionConditionBuilder;
+import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
+import com.g2rain.data.isolation.util.IsolationOrganSupport;
 import com.g2rain.mybatis.extension.InvocationContext;
-import com.g2rain.mybatis.extension.IsolationFieldExtractor;
 import com.g2rain.mybatis.extension.QueryProcessor;
 import com.g2rain.mybatis.extension.SqlHelper;
 import com.g2rain.mybatis.extension.SqlParserDelegate;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.BoundSql;
 import org.apache.ibatis.mapping.MappedStatement;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
 
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * 数据隔离查询处理器。
  * <p>
  * 在查询 SQL 执行前完成两件事：
  * 1) 校验目标组织是否在当前登录组织可访问范围内；
- * 2) 为 SQL 自动追加组织隔离条件。
+ * 2) 为 SQL 自动追加组织隔离条件，并在配置动态策略时追加数据权限过滤条件。
  * </p>
  *
  * @author alpha
@@ -43,6 +50,16 @@ public class IsolationQueryProcessor extends QueryProcessor {
     private final DataScopeExaminer dataScopeExaminer;
 
     /**
+     * 数据权限策略解析器。
+     */
+    private final CachedDataPermissionPolicyResolver dataPermissionPolicyResolver;
+
+    /**
+     * 权限模型模块编码，对应 {@code data_permission_model.module_code}。
+     */
+    private final String policyModuleCode;
+
+    /**
      * 拦截器顺序
      */
     private final int order;
@@ -52,8 +69,15 @@ public class IsolationQueryProcessor extends QueryProcessor {
      *
      * @param order 拦截器执行顺序
      */
-    public IsolationQueryProcessor(DataScopeExaminer dataScopeExaminer, int order) {
+    public IsolationQueryProcessor(
+        DataScopeExaminer dataScopeExaminer,
+        CachedDataPermissionPolicyResolver dataPermissionPolicyResolver,
+        String policyModuleCode,
+        int order
+    ) {
         this.dataScopeExaminer = dataScopeExaminer;
+        this.dataPermissionPolicyResolver = dataPermissionPolicyResolver;
+        this.policyModuleCode = policyModuleCode;
         this.order = order;
     }
 
@@ -74,7 +98,11 @@ public class IsolationQueryProcessor extends QueryProcessor {
         }
 
         // 运营公司不进行拦截
-        return !PrincipalContextHolder.isAdminCompany();
+        if (PrincipalContextHolder.isAdminCompany()) {
+            return false;
+        }
+
+        return OrganType.isTenant(PrincipalContextHolder.getOrganType());
     }
 
     @Override
@@ -85,35 +113,8 @@ public class IsolationQueryProcessor extends QueryProcessor {
             return;
         }
 
-        // 获取 ScopedValue 的调用链上下文操作目标组织标识
-        Long targetOrganId = PrincipalContextHolder.getTargetOrganId();
-
-        // 如果是租户直接用租户的组织标识
-        if (Objects.isNull(targetOrganId) && OrganType.isTenant(PrincipalContextHolder.getOrganType())) {
-            targetOrganId = PrincipalContextHolder.getOrganId();
-        }
-
-        // 获取执行 Mapper 接口方法的参数中的目标组织标识
-        if (Objects.isNull(targetOrganId)) {
-            // 1. 获取configuration
-            Configuration configuration = ms.getConfiguration();
-
-            // 3. 获取数据隔离的实际参数名称
-            String propertyName = meta.getOrganIdPropertyName();
-
-            Set<Object> values = IsolationFieldExtractor.extractValues(configuration, parameter, propertyName);
-            if (values.size() != 1) {
-                throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-            }
-
-            Object val = values.iterator().next();
-            targetOrganId = (val instanceof Number) ? ((Number) val).longValue() : null;
-        }
-
-        if (Objects.isNull(targetOrganId)) {
-            throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-        }
-
+        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId();
+        // 这里暂时用不上, 不过保留, 后续对于公司、渠道商、服务商等类型的机构可能会继续使用
         if (!dataScopeExaminer.isOrganInScope(targetOrganId)) {
             throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
         }
@@ -121,10 +122,26 @@ public class IsolationQueryProcessor extends QueryProcessor {
         try {
             Statement statement = SqlParserDelegate.parse(boundSql.getSql());
             Select select = (Select) statement;
-            select.accept(new DataIsolationSelectVisitor(meta.getOrganIdColumnName(), targetOrganId));
+            PlainSelect plainSelect = select.getPlainSelect();
+            if (Objects.isNull(plainSelect) || !(plainSelect.getFromItem() instanceof Table table)) {
+                throw new SQLException("unsupported select for data isolation");
+            }
+
+            Expression permissionExpression = null;
+            if (meta.hasDynamicPolicy()) {
+                DataPermissionPolicyResolveResult policy = dataPermissionPolicyResolver.resolve(
+                    targetOrganId, policyModuleCode, meta.getPermissionTableName()
+                );
+                permissionExpression = DataPermissionConditionBuilder.buildReadCondition(table, meta, policy);
+            }
+
+            select.accept(new DataIsolationSelectVisitor(
+                meta.getOrganIdColumnName(),
+                targetOrganId,
+                permissionExpression
+            ));
             SqlHelper.sql(boundSql).sql(select.toString());
-        } catch (
-            JSQLParserException e) {
+        } catch (JSQLParserException e) {
             throw new SQLException(e);
         }
     }

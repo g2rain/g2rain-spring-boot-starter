@@ -55,10 +55,6 @@ public class DataIsolationMapperRegistry extends MapperRegistry {
             return;
         }
 
-        if (noneIsolationEnabled(dataIsolation)) {
-            return;
-        }
-
         // 类全路径名
         String mapperClassName = mapperClass.getName();
         // 数据隔离元数据
@@ -108,16 +104,5 @@ public class DataIsolationMapperRegistry extends MapperRegistry {
         }
 
         return !Modifier.isStatic(method.getModifiers());
-    }
-
-    /**
-     * 判断注解配置是否等效于“未启用隔离”。
-     *
-     * @param dataIsolation 数据隔离注解
-     * @return {@code true} 表示未启用
-     */
-    public boolean noneIsolationEnabled(DataIsolation dataIsolation) {
-        // 未来若增加维度(如 userId),此处应改为:!di.organId() && !di.userId()
-        return !dataIsolation.organIdIsolation();
     }
 }
