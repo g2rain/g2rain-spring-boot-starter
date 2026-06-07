@@ -1,36 +1,45 @@
-package com.g2rain.data.isolation;
+package com.g2rain.data.isolation.processor;
 
 import com.g2rain.common.enums.OrganType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.web.PrincipalContextHolder;
+import com.g2rain.data.isolation.DataIsolationCache;
+import com.g2rain.data.isolation.DataScopeExaminer;
 import com.g2rain.data.isolation.enums.IsolationErrorCode;
 import com.g2rain.data.isolation.model.DataIsolationMeta;
+import com.g2rain.data.isolation.model.DataPermissionPolicyResolveResult;
+import com.g2rain.data.isolation.support.CachedDataPermissionPolicyResolver;
+import com.g2rain.data.isolation.util.IsolationOrganSupport;
 import com.g2rain.mybatis.extension.InvocationContext;
-import com.g2rain.mybatis.extension.IsolationFieldExtractor;
 import com.g2rain.mybatis.extension.UpdateProcessor;
 import org.apache.ibatis.executor.Executor;
 import org.apache.ibatis.mapping.MappedStatement;
 import org.apache.ibatis.mapping.SqlCommandType;
-import org.apache.ibatis.session.Configuration;
 
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * 数据隔离新增处理器。
  * <p>
- * 仅拦截 INSERT 操作，并在执行前校验目标组织是否在当前组织的数据访问范围内。
+ * 仅拦截 INSERT 操作，并在执行前校验目标组织是否在当前组织的数据访问范围内，
+ * 并在配置动态策略时校验写入权限。
  * </p>
  *
  * @author alpha
  * @since 2026/3/8
  */
+@Deprecated
 public class IsolationInsertProcessor extends UpdateProcessor {
 
     /**
      * 数据范围校验器。
      */
     private final DataScopeExaminer dataScopeExaminer;
+
+    /**
+     * 数据权限策略解析器。
+     */
+    private final CachedDataPermissionPolicyResolver dataPermissionPolicyResolver;
 
     /**
      * 拦截器顺序
@@ -40,11 +49,13 @@ public class IsolationInsertProcessor extends UpdateProcessor {
     /**
      * 构造函数。
      *
-     * @param dataScopeExaminer 数据范围校验器
-     * @param order             拦截器顺序
+     * @param dataScopeExaminer            数据范围校验器
+     * @param dataPermissionPolicyResolver 数据权限策略解析器
+     * @param order                        拦截器顺序
      */
-    public IsolationInsertProcessor(DataScopeExaminer dataScopeExaminer, int order) {
+    public IsolationInsertProcessor(DataScopeExaminer dataScopeExaminer, CachedDataPermissionPolicyResolver dataPermissionPolicyResolver, int order) {
         this.dataScopeExaminer = dataScopeExaminer;
+        this.dataPermissionPolicyResolver = dataPermissionPolicyResolver;
         this.order = order;
     }
 
@@ -62,7 +73,11 @@ public class IsolationInsertProcessor extends UpdateProcessor {
         }
 
         // 运营公司不进行拦截
-        return !PrincipalContextHolder.isAdminCompany();
+        if (PrincipalContextHolder.isAdminCompany()) {
+            return false;
+        }
+
+        return OrganType.isTenant(PrincipalContextHolder.getOrganType());
     }
 
     @Override
@@ -79,33 +94,7 @@ public class IsolationInsertProcessor extends UpdateProcessor {
             return;
         }
 
-        // 如果是租户直接用租户的组织标识
-        Long targetOrganId = null;
-        if (OrganType.isTenant(PrincipalContextHolder.getOrganType())) {
-            targetOrganId = PrincipalContextHolder.getOrganId();
-        }
-
-        // 获取执行 Mapper 接口方法的参数中的目标组织标识
-        if (Objects.isNull(targetOrganId)) {
-            // 1. 获取configuration
-            Configuration configuration = mappedStatement.getConfiguration();
-
-            // 3. 获取数据隔离的实际参数名称
-            String propertyName = meta.getOrganIdPropertyName();
-
-            Set<Object> values = IsolationFieldExtractor.extractValues(configuration, parameter, propertyName);
-            if (values.size() != 1) {
-                throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-            }
-
-            Object val = values.iterator().next();
-            targetOrganId = (val instanceof Number) ? ((Number) val).longValue() : null;
-        }
-
-        if (Objects.isNull(targetOrganId)) {
-            throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NOT_EXIST, "tenantId");
-        }
-
+        Long targetOrganId = IsolationOrganSupport.resolveTargetOrganId();
         if (!dataScopeExaminer.isOrganInScope(targetOrganId)) {
             throw new BusinessException(IsolationErrorCode.ISOLATION_TENANT_NON_SCOPE, targetOrganId);
         }

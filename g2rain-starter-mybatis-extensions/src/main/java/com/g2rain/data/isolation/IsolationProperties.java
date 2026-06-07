@@ -51,4 +51,24 @@ public class IsolationProperties {
      * 对应占位符：${g2rain.data.isolation.path-business}
      */
     private String pathBusiness = "/hierarchy/exists";
+
+    /**
+     * 权限策略服务名，默认 g2rain-department。
+     */
+    private String policyServiceName = "g2rain-department";
+
+    /**
+     * 权限策略服务直连 URL，默认空。
+     */
+    private String policyServiceUrl = "";
+
+    /**
+     * 权限策略接口基础路径，默认 data_permission_meta。
+     */
+    private String policyServicePath = "data_permission_meta";
+
+    /**
+     * 权限策略解析路径，默认 /policy_resolve。
+     */
+    private String policyResolvePath = "/policy_resolve";
 }

@@ -1,5 +1,4 @@
-package com.g2rain.data.isolation;
-
+package com.g2rain.data.isolation.sql;
 
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.LongValue;
@@ -17,7 +16,7 @@ import java.util.Objects;
 /**
  * 数据隔离 SELECT 语句访问器。
  * <p>
- * 用于在查询 SQL 的 where 条件中注入组织过滤表达式。
+ * 用于在查询 SQL 的 where 条件中注入组织过滤表达式，以及可选的数据权限策略表达式。
  * </p>
  *
  * @author alpha
@@ -36,14 +35,31 @@ public class DataIsolationSelectVisitor extends SelectVisitorAdapter {
     private final Long whereSegment;
 
     /**
+     * 数据权限策略过滤表达式。
+     */
+    private final Expression permissionExpr;
+
+    /**
      * 构造函数。
      *
      * @param columnName   组织字段名
      * @param whereSegment 组织字段值
      */
     public DataIsolationSelectVisitor(String columnName, Long whereSegment) {
+        this(columnName, whereSegment, null);
+    }
+
+    /**
+     * 构造函数。
+     *
+     * @param columnName     组织字段名
+     * @param whereSegment   组织字段值
+     * @param permissionExpr 数据权限策略过滤表达式
+     */
+    public DataIsolationSelectVisitor(String columnName, Long whereSegment, Expression permissionExpr) {
         this.columnName = columnName;
         this.whereSegment = whereSegment;
+        this.permissionExpr = permissionExpr;
     }
 
     /**
@@ -58,7 +74,26 @@ public class DataIsolationSelectVisitor extends SelectVisitorAdapter {
             return;
         }
 
-        //获得 where 条件表达式
+        Expression combined = buildOrganExpression(table);
+        if (Objects.nonNull(permissionExpr)) {
+            combined = new AndExpression(
+                new ParenthesedExpressionList<>(combined),
+                new ParenthesedExpressionList<>(permissionExpr)
+            );
+        }
+
+        Expression where = plainSelect.getWhere();
+        if (Objects.isNull(where)) {
+            plainSelect.setWhere(combined);
+            return;
+        }
+
+        plainSelect.setWhere(new AndExpression(
+            new ParenthesedExpressionList<>(where), combined
+        ));
+    }
+
+    private Expression buildOrganExpression(Table table) {
         StringBuilder column = new StringBuilder();
         if (Objects.nonNull(table.getAlias())) {
             column.append(table.getAlias().getName()).append(".");
@@ -66,15 +101,6 @@ public class DataIsolationSelectVisitor extends SelectVisitorAdapter {
 
         Column colName = new Column(column.append(columnName).toString());
         LongValue colValue = new LongValue(whereSegment);
-        final Expression expression = new EqualsTo(colName, colValue);
-        Expression where = plainSelect.getWhere();
-        if (Objects.isNull(where)) {
-            plainSelect.setWhere(expression);
-            return;
-        }
-
-        plainSelect.setWhere(new AndExpression(
-            new ParenthesedExpressionList<>(where), expression
-        ));
+        return new EqualsTo(colName, colValue);
     }
 }

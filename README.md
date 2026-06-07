@@ -9,23 +9,25 @@
 
 ## 📋 项目简介
 
-g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本与构建配置；实际可引入的 artifact 为多个子模块 Starter（当前 **9** 个）。项目遵循 Spring Boot 自动配置约定，模块职责单一，可按需引入。
+g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本与构建配置；实际可引入的 artifact 为多个子模块 Starter（当前 **11** 个）。项目遵循 Spring Boot 自动配置约定，模块职责单一，可按需引入。
 
-**当前版本**与根 `pom.xml` 中 `revision` 一致（示例以 `1.0.0` 为例，发布前请核对仓库内实际版本）。
+**当前版本**与根 `pom.xml` 中 `revision` 一致（当前为 **1.0.1**，发布前请核对仓库内实际版本）。
 
 ## ✨ 子模块一览（与 `pom.xml` 中 `<modules>` 一致）
 
-| 模块 | ArtifactId | 说明 |
-|------|------------|------|
-| 核心防护 | `g2rain-starter-aegis-core` | 微服务基础能力聚合与统一依赖 |
-| Web 基础设施 | `g2rain-starter-web-infra` | 过滤器、拦截器、全局异常与访问日志等 |
-| MyBatis 扩展 | `g2rain-starter-mybatis-extensions` | 集成 g2rain MyBatis 扩展与分页等能力 |
-| Redis | `g2rain-starter-data-redis` | Redis 封装、Redisson 分布式锁等 |
-| 缓存同步 | `g2rain-starter-cache-sync` | 跨实例缓存事件同步 |
-| 身份客户端 | `g2rain-starter-identity-client` | 分布式身份生成 |
-| Feign 增强 | `g2rain-starter-feign-plus` | OpenFeign 相关增强 |
-| 链路追踪 | `g2rain-starter-tracing-otel` | OpenTelemetry 追踪集成 |
-| Stream Redis | `g2rain-starter-stream-redis` | Spring Cloud Stream + Redis 绑定等 |
+| 模块 | ArtifactId | 说明 | 文档 |
+|------|------------|------|------|
+| 核心防护 | `g2rain-starter-aegis-core` | 微服务基础能力聚合与统一依赖 | — |
+| Web 基础设施 | `g2rain-starter-web-infra` | 过滤器、拦截器、全局异常与访问日志等 | — |
+| MyBatis 扩展 | `g2rain-starter-mybatis-extensions` | MyBatis 插件链、分页、机构/部门数据隔离 | [README](g2rain-starter-mybatis-extensions/README.md) |
+| Redis | `g2rain-starter-data-redis` | Redis 封装、Redisson 分布式锁等 | — |
+| 缓存同步 | `g2rain-starter-cache-sync` | 跨实例缓存事件同步 | [README](g2rain-starter-cache-sync/README.md) |
+| 身份客户端 | `g2rain-starter-identity-client` | 分布式身份生成 | — |
+| Feign 增强 | `g2rain-starter-feign-plus` | OpenFeign 相关增强 | — |
+| 链路追踪 | `g2rain-starter-tracing-otel` | OpenTelemetry 追踪集成 | — |
+| Stream Redis | `g2rain-starter-stream-redis` | Spring Cloud Stream + Redis 绑定 | [README](g2rain-starter-stream-redis/README.md) |
+| SpringDoc | `g2rain-starter-spring-doc` | OpenAPI 文档公共配置 | — |
+| 部门 Principal | `g2rain-starter-department-principal` | 登录态写入部门路径，配合数据隔离 | — |
 
 ## 🚀 快速开始
 
@@ -45,7 +47,7 @@ g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本
         <dependency>
             <groupId>com.g2rain</groupId>
             <artifactId>g2rain-spring-boot-starter</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.1</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -60,35 +62,49 @@ g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本
 <dependency>
     <groupId>com.g2rain</groupId>
     <artifactId>g2rain-starter-aegis-core</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 
 <!-- Web 基础设施 -->
 <dependency>
     <groupId>com.g2rain</groupId>
     <artifactId>g2rain-starter-web-infra</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 
 <!-- MyBatis 扩展（分页等） -->
 <dependency>
     <groupId>com.g2rain</groupId>
     <artifactId>g2rain-starter-mybatis-extensions</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 
 <!-- 缓存同步 -->
 <dependency>
     <groupId>com.g2rain</groupId>
     <artifactId>g2rain-starter-cache-sync</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 
 <!-- Redis -->
 <dependency>
     <groupId>com.g2rain</groupId>
     <artifactId>g2rain-starter-data-redis</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
+</dependency>
+
+<!-- 部门 Principal 增强（配合数据隔离） -->
+<dependency>
+    <groupId>com.g2rain</groupId>
+    <artifactId>g2rain-starter-department-principal</artifactId>
+    <version>1.0.1</version>
+</dependency>
+
+<!-- SpringDoc 公共配置 -->
+<dependency>
+    <groupId>com.g2rain</groupId>
+    <artifactId>g2rain-starter-spring-doc</artifactId>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -117,7 +133,7 @@ g2rain:
 public class DemoController {
 
     @LoginGuard(require = true, anonymous = false)
-    @IdentityInject(userIdRequire = true)
+    @IdentityInject(userIdPropertyName = "userId")
     @GetMapping("/api/demo")
     public Result<String> demo(@RequestParam String param) {
         return Result.success("Hello World");
@@ -125,22 +141,32 @@ public class DemoController {
 }
 ```
 
-### 数据隔离配置（示例，以前缀以实际子模块为准）
+### 数据隔离配置
+
+最小示例（仅机构隔离）。完整说明（部门策略、`@DataIsolation` 属性、远程服务配置、排障）见 [g2rain-starter-mybatis-extensions/README.md](g2rain-starter-mybatis-extensions/README.md)。
 
 ```yaml
 g2rain:
   data:
     isolation:
       enabled: true
+  principal:
+    department:
+      enabled: true   # 部门隔离时需要，向 Principal 写入 deptPath
 ```
 
 ```java
-@DataIsolation(applicationIdIsolation = true, organIdIsolation = true)
+@DataIsolation(
+    isolationModule = "order",
+    isolationTable = "order",
+    userIdColumnName = "owner_user_id",
+    deptPathColumnName = "dept_path"
+)
 @Mapper
-public interface UserMapper {
+public interface OrderMapper {
 
-    @Select("SELECT * FROM user WHERE name = #{name}")
-    List<User> findByName(@Param("name") String name);
+    @Select("SELECT * FROM `order` WHERE status = #{status}")
+    List<Order> findByStatus(@Param("status") String status);
 }
 ```
 
@@ -185,15 +211,17 @@ g2rain:
 
 ```
 g2rain-spring-boot-starter/
-├── g2rain-starter-aegis-core/          # 核心防护
-├── g2rain-starter-web-infra/           # Web 基础设施
-├── g2rain-starter-mybatis-extensions/ # MyBatis 扩展与分页等
-├── g2rain-starter-data-redis/          # Redis / Redisson
-├── g2rain-starter-cache-sync/         # 缓存同步
-├── g2rain-starter-identity-client/    # 身份客户端
-├── g2rain-starter-feign-plus/         # Feign 增强
-├── g2rain-starter-tracing-otel/       # OpenTelemetry 追踪
-├── g2rain-starter-stream-redis/       # Stream + Redis
+├── g2rain-starter-aegis-core/           # 核心防护
+├── g2rain-starter-web-infra/            # Web 基础设施
+├── g2rain-starter-mybatis-extensions/   # MyBatis 扩展、分页、数据隔离
+├── g2rain-starter-data-redis/           # Redis / Redisson
+├── g2rain-starter-cache-sync/           # 缓存同步
+├── g2rain-starter-identity-client/      # 身份客户端
+├── g2rain-starter-feign-plus/           # Feign 增强
+├── g2rain-starter-tracing-otel/         # OpenTelemetry 追踪
+├── g2rain-starter-stream-redis/         # Stream + Redis
+├── g2rain-starter-spring-doc/           # SpringDoc 公共配置
+├── g2rain-starter-department-principal/ # 部门 Principal 增强
 ├── pom.xml
 └── README.md
 ```
@@ -204,13 +232,15 @@ g2rain-spring-boot-starter/
 |------|----------|----------|
 | aegis-core | 核心依赖聚合与基础防护 | 微服务底座 |
 | web-infra | 过滤器、拦截器、统一异常与日志 | 所有 Web 应用 |
-| mybatis-extensions | MyBatis 插件链、分页等 | 持久层增强 |
+| mybatis-extensions | MyBatis 插件链、分页、机构/部门数据隔离 | 持久层增强 |
 | cache-sync | 缓存跨节点同步 | 分布式缓存一致性 |
 | data-redis | Redis 工具与分布式锁 | 缓存、锁 |
 | identity-client | 分布式 ID / 身份 | 需要唯一标识的业务 |
 | feign-plus | Feign 调用增强 | 服务间调用 |
 | tracing-otel | 链路追踪 | 可观测性 |
 | stream-redis | Stream 消息与 Redis 绑定 | 事件驱动 |
+| spring-doc | OpenAPI 文档公共配置 | 需要统一 API 文档的微服务 |
+| department-principal | 登录态部门路径增强 | 配合 mybatis-extensions 部门隔离 |
 
 ## 🔧 开发指南
 
