@@ -199,22 +199,6 @@ public class G2rainJacksonHttpMessageConverter extends JacksonJsonHttpMessageCon
     }
 
     /**
-     * 仅对 {@link Result} 及其子类声明可写，避免抢占其他返回类型的默认 JSON 转换器。
-     *
-     * <p>本转换器的定位是：专门负责 {@code Result} 类型的响应增强（如上下文注入、字段过滤），
-     * 其他类型仍由框架内置的 JSON 转换器处理，以保持第三方组件和非 {@code Result} 接口的行为稳定。</p>
-     */
-    @Override
-    public boolean canWrite(ResolvableType type, @NonNull Class<?> valueClass, @Nullable MediaType mediaType) {
-        // 只处理 Result 及其子类，其余一律交给后面的默认 Jackson converter
-        if (!Result.class.isAssignableFrom(type.toClass())) {
-            return false;
-        }
-
-        return super.canWrite(type, valueClass, mediaType);
-    }
-
-    /**
      * 写入 HTTP 响应体的核心方法
      * <p>
      * 逻辑：
