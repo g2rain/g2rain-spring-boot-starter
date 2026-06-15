@@ -4,7 +4,6 @@ package com.g2rain.web.autoconfigure;
 import com.g2rain.common.exception.DefaultExceptionProcessor;
 import com.g2rain.common.exception.ErrorMessageRegistry;
 import com.g2rain.common.exception.ExceptionProcessor;
-import com.g2rain.web.converters.G2rainJacksonHttpMessageConverter;
 import com.g2rain.web.exception.GlobalExceptionHandler;
 import com.g2rain.web.filters.AccessLogFilter;
 import com.g2rain.web.filters.GlobalExceptionFilter;
@@ -23,19 +22,17 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Role;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-import tools.jackson.databind.json.JsonMapper;
 
 /**
  * G2rain Web 模块自动配置。
  * <p>
  * 该配置类会根据 {@link G2rainWebProperties} 中各个开关，注册 Filter、Interceptor、ExceptionProcessor
- * 以及自定义类型转换器和 Jackson Converter。
+ * 以及 Web MVC 拦截器、Jackson HTTP Message Converter。
  * <p>
  * 使用说明：
  * <ul>
@@ -280,25 +277,5 @@ public class WebAutoConfiguration implements WebMvcConfigurer {
                 Ordered.HIGHEST_PRECEDENCE + properties.getIdentityParamInjectorOrder()
             );
         }
-    }
-
-    /**
-     * 注册自定义 {@link G2rainJacksonHttpMessageConverter}，替代默认的 MappingJackson2HttpMessageConverter。
-     *
-     * <p>通过注入 Spring Boot 全局 {@link JsonMapper} 构造 G2rainConverter，
-     * 保证全局配置生效，包括模块、日期格式、序列化规则等。</p>
-     *
-     * <p>使用 {@link Primary} 注解确保本 Converter 优先被 Spring MVC 使用，
-     * 完全替代默认 Converter，无需再操作 converters 列表。</p>
-     *
-     * @param mapper Spring Boot 容器中已有的全局 JsonMapper
-     * @return 已初始化的 {@link G2rainJacksonHttpMessageConverter} Bean
-     */
-    @Bean
-    @Primary
-    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    @ConditionalOnMissingBean(G2rainJacksonHttpMessageConverter.class)
-    public G2rainJacksonHttpMessageConverter g2rainJacksonHttpMessageConverter(JsonMapper mapper) {
-        return new G2rainJacksonHttpMessageConverter(mapper, properties.isEnableResultMixinFilter());
     }
 }
