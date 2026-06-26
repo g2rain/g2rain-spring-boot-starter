@@ -2,44 +2,53 @@
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.g2rain/g2rain-spring-boot-starter.svg)](https://search.maven.org/artifact/com.g2rain/g2rain-spring-boot-starter)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 [![Java Version](https://img.shields.io/badge/Java-25+-orange.svg)](https://openjdk.java.net/)
 
-> 企业级 Spring Boot Starter 集合，为微服务开发提供统一的基础设施支持。
+## 1. 徽标与状态标识
 
-## 📋 项目简介
+- 当前版本通过 `Maven Central` 发布
+- 当前运行时要求 `Java 25+`
+- 当前构建方式以 `Maven` 为准
+- 当前开源许可证为 `Apache 2.0`
 
-g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本与构建配置；实际可引入的 artifact 为多个子模块 Starter（当前 **11** 个）。项目遵循 Spring Boot 自动配置约定，模块职责单一，可按需引入。
+## 2. 项目简介
 
-**当前版本**与根 `pom.xml` 中 `revision` 一致（当前为 **1.0.1**，发布前请核对仓库内实际版本）。
+`g2rain-spring-boot-starter` 是 G2rain 平台的 Spring Boot Starter 集合仓库，用于统一沉淀微服务接入平台能力时常用的自动配置与基础设施封装。它不是单个 Starter，而是一组按能力拆分的 Starter 模块集合，覆盖 Web 基础设施、Redis、缓存同步、MyBatis 数据隔离、身份接入、Feign 增强、链路追踪、OpenAPI 文档等能力。
 
-## ✨ 子模块一览（与 `pom.xml` 中 `<modules>` 一致）
+## 3. 平台定位
 
-| 模块 | ArtifactId | 说明 | 文档 |
-|------|------------|------|------|
-| 核心防护 | `g2rain-starter-aegis-core` | 微服务基础能力聚合与统一依赖 | — |
-| Web 基础设施 | `g2rain-starter-web-infra` | 过滤器、拦截器、全局异常与访问日志等 | — |
-| MyBatis 扩展 | `g2rain-starter-mybatis-extensions` | MyBatis 插件链、分页、机构/部门数据隔离 | [README](g2rain-starter-mybatis-extensions/README.md) |
-| Redis | `g2rain-starter-data-redis` | Redis 封装、Redisson 分布式锁等 | — |
-| 缓存同步 | `g2rain-starter-cache-sync` | 跨实例缓存事件同步 | [README](g2rain-starter-cache-sync/README.md) |
-| 身份客户端 | `g2rain-starter-identity-client` | 分布式身份生成 | — |
-| Feign 增强 | `g2rain-starter-feign-plus` | OpenFeign 相关增强 | — |
-| 链路追踪 | `g2rain-starter-tracing-otel` | OpenTelemetry 追踪集成 | — |
-| Stream Redis | `g2rain-starter-stream-redis` | Spring Cloud Stream + Redis 绑定 | [README](g2rain-starter-stream-redis/README.md) |
-| SpringDoc | `g2rain-starter-spring-doc` | OpenAPI 文档公共配置 | — |
-| 部门 Principal | `g2rain-starter-department-principal` | 登录态写入部门路径，配合数据隔离 | — |
+`g2rain-spring-boot-starter` 位于 G2rain 平台公共基础能力层与工程化接入层之间。  
+它主要服务于平台核心后端服务、增强组件和新建微服务项目。  
+根仓库负责统一版本、统一质量与统一发布链路，真正的接入入口是各个子 Starter 模块。
 
-## 🚀 快速开始
+## 4. 核心能力
+
+- 聚合型基础 Starter：通过 `g2rain-starter-aegis-core` 一次引入常用基础接入能力
+- Web 基础设施接入：过滤器、拦截器、异常处理、访问日志、主体上下文透传
+- MyBatis 扩展与数据隔离：分页、机构隔离、部门数据权限、SQL 条件增强
+- Redis 与缓存同步：Redis Helper、分布式锁、事件同步适配
+- 服务调用与身份链路：身份客户端、Feign 增强
+- 可观测性与文档：OpenTelemetry 链路追踪、SpringDoc 统一配置
+- 统一发布链路：Maven Central / Snapshot 发布、质量插件与签名流程
+
+## 5. 技术栈
+
+- 语言与运行时：`Java 25`
+- 基础框架：`Spring Boot 4.0.5`
+- 微服务生态：`Spring Cloud 2025.1.1`
+- 构建工具：`Maven`
+- 关键能力依赖：`g2rain-common`、`MyBatis`、`Spring Data Redis`、`Redisson`、`Spring Cloud Stream`、`SpringDoc`、`Micrometer Tracing OTel`
+- 质量工具：`Checkstyle`、`PMD`、`SpotBugs`、`JaCoCo`
+
+## 6. 快速开始
 
 ### 环境要求
 
-- **JDK**：25+（与父 POM `maven.compiler.release` 一致）
-- **Maven**：3.6+
-- **Spring Boot**：4.x（父 POM 继承 `spring-boot-starter-parent`，当前为 **4.0.5**）
+- `JDK 25`
+- `Maven 3.9+`
 
-### 安装依赖
-
-#### 父 POM（可选，用于统一版本管理）
+### 引入父 POM
 
 ```xml
 <dependencyManagement>
@@ -47,7 +56,7 @@ g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本
         <dependency>
             <groupId>com.g2rain</groupId>
             <artifactId>g2rain-spring-boot-starter</artifactId>
-            <version>1.0.1</version>
+            <version>1.0.3</version>
             <type>pom</type>
             <scope>import</scope>
         </dependency>
@@ -55,333 +64,222 @@ g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本
 </dependencyManagement>
 ```
 
-#### 按需引入（示例版本请与 Maven Central 或本仓库 `revision` 保持一致）
+### 按需引入 Starter
 
 ```xml
-<!-- 核心防护（常用作基础依赖） -->
 <dependency>
     <groupId>com.g2rain</groupId>
     <artifactId>g2rain-starter-aegis-core</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.3</version>
 </dependency>
 
-<!-- Web 基础设施 -->
-<dependency>
-    <groupId>com.g2rain</groupId>
-    <artifactId>g2rain-starter-web-infra</artifactId>
-    <version>1.0.1</version>
-</dependency>
-
-<!-- MyBatis 扩展（分页等） -->
 <dependency>
     <groupId>com.g2rain</groupId>
     <artifactId>g2rain-starter-mybatis-extensions</artifactId>
-    <version>1.0.1</version>
-</dependency>
-
-<!-- 缓存同步 -->
-<dependency>
-    <groupId>com.g2rain</groupId>
-    <artifactId>g2rain-starter-cache-sync</artifactId>
-    <version>1.0.1</version>
-</dependency>
-
-<!-- Redis -->
-<dependency>
-    <groupId>com.g2rain</groupId>
-    <artifactId>g2rain-starter-data-redis</artifactId>
-    <version>1.0.1</version>
-</dependency>
-
-<!-- 部门 Principal 增强（配合数据隔离） -->
-<dependency>
-    <groupId>com.g2rain</groupId>
-    <artifactId>g2rain-starter-department-principal</artifactId>
-    <version>1.0.1</version>
-</dependency>
-
-<!-- SpringDoc 公共配置 -->
-<dependency>
-    <groupId>com.g2rain</groupId>
-    <artifactId>g2rain-starter-spring-doc</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.3</version>
 </dependency>
 ```
 
-### Maven Central 与 CI
+### 本地构建
 
-- **Release**：推送标签 `v*.*.*` 触发 [Release 工作流](.github/workflows/release.yml)，使用 `-P release` 签名并发布至 Maven Central（需配置仓库 Secrets：`CENTRAL_PORTAL_*`、`MAVEN_GPG_*`）。
-- **Snapshot**：`develop` 分支在 `project.version` 为 `*-SNAPSHOT` 时部署快照（见 [.github/workflows/snapshot.yml](.github/workflows/snapshot.yml)）。
+```bash
+mvn clean install
+```
 
-## 📖 使用指南
+### 发布说明
 
-### Web基础设施配置
+- 正式版通过 Git Tag 触发 `release.yml`
+- `develop` 分支上的 `-SNAPSHOT` 版本通过 `snapshot.yml` 发布
+- Release 流程包含源码包、Javadoc 包和 GPG 签名
+
+## 7. 项目结构
+
+```text
+g2rain-spring-boot-starter/
+├── g2rain-starter-aegis-core/
+├── g2rain-starter-web-infra/
+├── g2rain-starter-mybatis-extensions/
+├── g2rain-starter-data-redis/
+├── g2rain-starter-cache-sync/
+├── g2rain-starter-identity-client/
+├── g2rain-starter-feign-plus/
+├── g2rain-starter-tracing-otel/
+├── g2rain-starter-stream-redis/
+├── g2rain-starter-spring-doc/
+├── g2rain-starter-department-principal/
+├── .github/workflows/
+└── pom.xml
+```
+
+### 核心能力结构说明
+
+#### 1. `g2rain-starter-aegis-core`：聚合型基础接入包
+
+- 这是一个 `pom` 型 Starter，不承载源码实现
+- 它通过聚合 `web-infra`、`identity-client`、`tracing-otel`，给微服务提供一套常用基础接入组合
+- 适合希望快速完成统一 Web、身份和链路追踪接入的服务
+
+典型用法：
+
+```xml
+<dependency>
+    <groupId>com.g2rain</groupId>
+    <artifactId>g2rain-starter-aegis-core</artifactId>
+    <version>1.0.3</version>
+</dependency>
+```
+
+#### 2. `g2rain-starter-web-infra`：统一 Web 基础设施
+
+- 自动注册请求包装、主体上下文、访问日志、全局异常等过滤器
+- 自动装配登录守卫、身份参数注入和统一 JSON Converter
+- 通过 `g2rain.web.*` 配置项控制开关与顺序
+
+典型用法：
 
 ```yaml
 g2rain:
   web:
     enabled: true
-    http-wrapper-filter-order: 100
-    principal-context-filter-order: 150
-    access-log-filter-order: 200
-    login-guard-interceptor-order: 300
-    identity-param-injector-order: 400
+    access-log-filter-enabled: true
+    login-guard-interceptor-enabled: true
 ```
 
 ```java
-@RestController
-public class DemoController {
-
-    @LoginGuard(require = true, anonymous = false)
-    @IdentityInject(userIdPropertyName = "userId")
-    @GetMapping("/api/demo")
-    public Result<String> demo(@RequestParam String param) {
-        return Result.success("Hello World");
-    }
+@LoginGuard(require = true, anonymous = false)
+@IdentityInject(userIdPropertyName = "userId")
+@GetMapping("/api/demo")
+public Result<String> demo() {
+    return Result.success("ok");
 }
 ```
 
-### 数据隔离配置
+#### 3. `g2rain-starter-mybatis-extensions`：分页与数据隔离
 
-最小示例（仅机构隔离）。完整说明（部门策略、`@DataIsolation` 属性、远程服务配置、排障）见 [g2rain-starter-mybatis-extensions/README.md](g2rain-starter-mybatis-extensions/README.md)。
+- 提供分页、机构隔离、部门数据权限和 SQL 条件构建能力
+- 通过 `@DataIsolation` 标注 Mapper 接口启用隔离
+- 可与 `g2rain-department`、`g2rain-basis`、`g2rain-starter-department-principal` 协作完成动态权限解析
 
-```yaml
-g2rain:
-  data:
-    isolation:
-      enabled: true
-  principal:
-    department:
-      enabled: true   # 部门隔离时需要，向 Principal 写入 deptPath
-```
-
-```yaml
-spring:
-  application:
-    name: g2rain-order   # 须与 data_permission_model.module_code 一致
-```
+典型用法：
 
 ```java
 @DataIsolation(
     permissionTableName = "order",
-    isolationModule = "order",
-    isolationTable = "order",
     userIdColumnName = "owner_user_id",
     deptPathColumnName = "dept_path"
 )
 @Mapper
 public interface OrderMapper {
-
-    @Select("SELECT * FROM `order` WHERE status = #{status}")
-    List<Order> findByStatus(@Param("status") String status);
+    List<Order> selectList(OrderQuery query);
 }
 ```
 
-### 缓存同步配置
+#### 4. `g2rain-starter-data-redis`：Redis Helper 与分布式锁
 
-```yaml
-g2rain:
-  syncer:
-    enabled: true
-    redis:
-      # Redis 发布器开关
-      publisher-enabled: true
-      # Redis 订阅器开关
-      subscriber-enabled: true
-      # Redis 发布主题
-      publisher-topic: g2rain:events
-      # Redis 订阅主题列表
-      subscriber-topics:
-        - g2rain:events
-```
+- 自动装配 `StringRedisHelper`、`GenericRedisHelper`、`DistributedLock`
+- 按容器中已有 `StringRedisTemplate`、`RedisTemplate`、`RedissonClient` 条件化创建 Bean
+- 适合微服务快速接入 Redis 常用操作与 Redisson 锁能力
 
-### Redis数据处理
+典型用法：
 
 ```java
-    @Autowired
-    private GenericRedisHelper redisHelper;
+@Autowired
+private GenericRedisHelper redisHelper;
 
-    // Value操作
-    redisHelper.set("key1", "value1");
-    String value = redisHelper.get("key1", String.class);
-
-    // Hash操作
-    redisHelper.hSet("hashKey", "field1", "hValue1");
-    String hValue = redisHelper.hGet("hashKey", "field1", String.class);
-
-    // List操作
-    redisHelper.lPush("listKey", "listValue1");
-    List<String> values = redisHelper.lRange("listKey", 0, -1, String.class);
+@Autowired
+private DistributedLock distributedLock;
 ```
 
-## 🏗️ 项目结构
+#### 5. `g2rain-starter-cache-sync`：公共事件同步适配
 
-```
-g2rain-spring-boot-starter/
-├── g2rain-starter-aegis-core/           # 核心防护
-├── g2rain-starter-web-infra/            # Web 基础设施
-├── g2rain-starter-mybatis-extensions/   # MyBatis 扩展、分页、数据隔离
-├── g2rain-starter-data-redis/           # Redis / Redisson
-├── g2rain-starter-cache-sync/           # 缓存同步
-├── g2rain-starter-identity-client/      # 身份客户端
-├── g2rain-starter-feign-plus/           # Feign 增强
-├── g2rain-starter-tracing-otel/         # OpenTelemetry 追踪
-├── g2rain-starter-stream-redis/         # Stream + Redis
-├── g2rain-starter-spring-doc/           # SpringDoc 公共配置
-├── g2rain-starter-department-principal/ # 部门 Principal 增强
-├── pom.xml
-└── README.md
+- 把 `g2rain-common.syncer` 抽象适配到 Spring Cloud Stream
+- 自动装配 `EventPublisherHub`、`StreamEventSubscriber`、`MessageDispatcher`
+- 适合需要把缓存更新或业务事件同步到消息总线的场景
+
+典型用法：
+
+```java
+@Autowired
+private EventPublisherHub eventPublisherHub;
+
+eventPublisherHub.sendUpdate("output", "ORDER_SERVICE", payload);
 ```
 
-## 📊 模块对比
+#### 6. 其他 Starter 的角色边界
 
-| 模块 | 主要功能 | 适用场景 |
-|------|----------|----------|
-| aegis-core | 核心依赖聚合与基础防护 | 微服务底座 |
-| web-infra | 过滤器、拦截器、统一异常与日志 | 所有 Web 应用 |
-| mybatis-extensions | MyBatis 插件链、分页、机构/部门数据隔离 | 持久层增强 |
-| cache-sync | 缓存跨节点同步 | 分布式缓存一致性 |
-| data-redis | Redis 工具与分布式锁 | 缓存、锁 |
-| identity-client | 分布式 ID / 身份 | 需要唯一标识的业务 |
-| feign-plus | Feign 调用增强 | 服务间调用 |
-| tracing-otel | 链路追踪 | 可观测性 |
-| stream-redis | Stream 消息与 Redis 绑定 | 事件驱动 |
-| spring-doc | OpenAPI 文档公共配置 | 需要统一 API 文档的微服务 |
-| department-principal | 登录态部门路径增强 | 配合 mybatis-extensions 部门隔离 |
+- `g2rain-starter-identity-client`：统一身份客户端接入
+- `g2rain-starter-feign-plus`：统一 Feign 增强
+- `g2rain-starter-tracing-otel`：统一链路追踪接入
+- `g2rain-starter-stream-redis`：Redis Binder / Stream 相关能力
+- `g2rain-starter-spring-doc`：统一 OpenAPI 文档装配
+- `g2rain-starter-department-principal`：把部门路径增强写入主体上下文，供数据隔离能力使用
 
-## 🔧 开发指南
+#### 7. 接入建议与边界
 
-### 代码规范
+- 如果希望快速构建标准微服务基础接入，优先使用 `g2rain-starter-aegis-core`
+- 如果只需要某一项能力，建议按模块单独引入对应 Starter
+- `mybatis-extensions` 与 `department-principal` 在数据权限场景下通常需要配合使用
+- 根仓库本身不是运行时依赖入口，不建议业务项目只引入父 `pom` 而不引入具体 Starter
 
-项目遵循以下规范：
-- **Google Java代码规范**
-- **Spring Boot最佳实践**
-- **模块化设计原则**
-
-### 构建命令
+## 8. 常用命令
 
 ```bash
-# 编译所有模块
-mvn clean compile
-
-# 运行测试
+mvn clean install
 mvn test
-
-# 代码质量检查
-mvn checkstyle:check pmd:check spotbugs:check
-
-# 生成代码覆盖率报告
-mvn jacoco:report
-
-# 打包所有模块
-mvn clean package
+mvn -pl g2rain-starter-web-infra -am package
 ```
 
-### 添加新的Starter
+## 9. 质量与测试
 
-1. 在根目录下创建新的starter模块
-2. 继承父POM配置
-3. 添加必要的依赖
-4. 实现自动配置类
-5. 添加配置属性类
-6. 更新根POM的modules配置
+- 当前测试主要分布于 `g2rain-starter-web-infra`、`g2rain-starter-data-redis`、`g2rain-starter-cache-sync`、`g2rain-starter-stream-redis`
+- 测试重点覆盖自动配置、过滤器、拦截器、Redis Helper、缓存同步与 Binder 适配
+- 根仓库统一启用了 `maven-enforcer-plugin`、`maven-checkstyle-plugin`、`maven-pmd-plugin`、`spotbugs-maven-plugin` 和 `jacoco-maven-plugin`
+- 当前仍建议后续继续补强 `identity-client`、`feign-plus`、`tracing-otel` 等模块的独立测试事实说明
 
-## 🧪 测试指南
+## 10. 相关仓库
 
-### 单元测试
+- `g2rain-common`
+- `g2rain-mybatis-extensions`
+- `g2rain-iam`
+- `g2rain-infra`
+- `g2rain-department`
 
-```bash
-# 运行特定模块测试
-mvn test -pl g2rain-starter-web-infra
+## 11. 使用建议
 
-# 运行所有测试
-mvn test
-```
+- 适合作为 G2rain 平台 Java 微服务的统一基础接入层
+- 新服务建议先判断是需要聚合接入还是按能力拆分接入
+- 如果项目希望遵循平台统一身份、安全、日志、数据权限和缓存同步规范，应优先从这里选取 Starter
+- 不建议把该仓库理解为普通依赖清单仓库，它的核心价值在自动配置与接入标准化
 
-### 集成测试
+## 12. 贡献指南
 
-```bash
-# 运行集成测试
-mvn verify
-```
+欢迎通过文档改进、Issue 反馈、测试补充、代码优化、功能增强等形式参与贡献。
 
-## 📈 性能优化
+建议流程：
+1. Fork 本仓库
+2. 创建特性分支
+3. 提交修改
+4. 推送分支
+5. 提交 Pull Request
 
-### 数据隔离优化
-- 使用缓存减少SQL解析开销
-- 合理配置隔离规则避免过度拦截
-
-### 缓存同步优化
-- 根据业务需求选择合适的消息中间件
-- 合理配置消息队列参数
-
-### Redis操作优化
-- 使用批量操作减少网络开销
-- 合理设置过期时间
-
-## 🔍 故障排查
-
-### 常见问题
-
-**Q: Web基础设施过滤器不生效？**
-A: 检查配置`g2rain.web.enabled=true`，确认过滤器顺序配置正确。
-
-**Q: 数据隔离SQL解析失败？**
-A: 检查SQL语法是否正确，确保使用了支持的SQL语句类型。
-
-**Q: 缓存同步消息丢失？**
-A: 检查消息中间件配置，确认网络连接正常。
-
-### 调试模式
-
-```yaml
-logging:
-  level:
-    com.g2rain: DEBUG
-```
-
-## 🤝 贡献指南
-
-我们欢迎所有形式的贡献！
-
-### 贡献流程
-
-1. **Fork** 本仓库
-2. **创建特性分支**：`git checkout -b feature/your-feature-name`
-3. **提交更改**：`git commit -m "Add some feature"`
-4. **推送分支**：`git push origin feature/your-feature-name`
-5. **提交Pull Request**
-
-### 代码贡献要求
-
-- 遵循Google Java代码规范
-- 添加完整的单元测试
+提交前请尽量确保：
+- 遵循现有技术栈与代码规范
 - 更新相关文档
-- 确保所有测试通过
-- 代码覆盖率不低于80%
+- 补充必要测试
 
-### 新增Starter要求
-
-- 提供完整的自动配置
-- 包含配置属性类
-- 添加spring-configuration-metadata.json
-- 提供详细的使用文档
-- 包含完整的测试用例
-
-## 📄 许可证
+## 13. 许可证
 
 本项目基于 [Apache 2.0许可证](LICENSE) 开源。
 
-## 📞 联系我们
+## 14. 联系我们
 
+- **站点**: https://www.g2rain.com/
 - **Issues**: [GitHub Issues](https://github.com/g2rain/g2rain/issues)
 - **讨论**: [GitHub Discussions](https://github.com/g2rain/g2rain/discussions)
 - **邮箱**: g2rain_developer@163.com
 
-## 🙏 致谢
+## 15. 致谢
 
-感谢所有为这个项目做出贡献的开发者们！
+感谢所有为这个项目做出贡献的开发者们。
 
----
-
-⭐ 如果这个项目对您有帮助，请给我们一个Star！
+如果这个项目对您有帮助，欢迎 Star 支持。
