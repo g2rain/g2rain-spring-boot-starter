@@ -17,7 +17,7 @@ public class G2rainWebPropertiesTest {
         contextRunner.run(context -> {
             G2rainWebProperties properties = context.getBean(G2rainWebProperties.class);
             assertThat(properties.isEnabled()).isTrue();
-            assertThat(properties.getHttpWrapperFilterOrder()).isEqualTo(100);
+            assertThat(properties.getHttpWrapperFilterOrder()).isEqualTo(150);
             assertThat(properties.getPrincipalContextFilterOrder()).isEqualTo(200);
             assertThat(properties.getAccessLogFilterOrder()).isEqualTo(300);
             assertThat(properties.getLoginGuardInterceptorOrder()).isEqualTo(400);

@@ -94,7 +94,7 @@
         <commons.lang3.version>3.20.0</commons.lang3.version>
         <commons.fileupload.version>1.6.0</commons.fileupload.version>
         <redisson.starter.version>4.3.0</redisson.starter.version>
-        <g2rain.common.version>1.0.6</g2rain.common.version>
+        <g2rain.common.version>1.0.7</g2rain.common.version>
         <g2rain.mybatis.extension.version>1.0.4</g2rain.mybatis.extension.version>
         <g2rain.mybatis.pagination.version>1.0.4</g2rain.mybatis.pagination.version>
         <org.mybatis.version>3.5.19</org.mybatis.version>
@@ -205,6 +205,7 @@
         <dependency>
             <groupId>com.g2rain</groupId>
             <artifactId>g2rain-common</artifactId>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
