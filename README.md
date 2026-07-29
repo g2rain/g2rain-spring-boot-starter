@@ -36,10 +36,23 @@ g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本
 - **JDK**：25+（与父 POM `maven.compiler.release` 一致）
 - **Maven**：3.6+
 - **Spring Boot**：4.x（父 POM 继承 `spring-boot-starter-parent`，当前为 **4.0.5**）
+- **g2rain-common**：`>= 1.0.7`（与父 POM `g2rain.common.version` 一致；**须由微服务显式引入**）
+
+> 各 Starter 对 `g2rain-common` 使用 **`provided`** 作用域，**不会传递**。未声明 common 时运行期会缺类；版本由业务侧自行管理，避免与 Starter 传递版本冲突。兼容范围内可高于下限（如 `1.0.8+`），若 common 发生不兼容变更需同步升级 Starter。
 
 ### 安装依赖
 
-#### 父 POM（可选，用于统一版本管理）
+#### 必选：显式引入 g2rain-common
+
+```xml
+<dependency>
+    <groupId>com.g2rain</groupId>
+    <artifactId>g2rain-common</artifactId>
+    <version>1.0.7</version><!-- 或更高兼容版本；建议在 dependencyManagement 中统一 -->
+</dependency>
+```
+
+#### 父 POM（可选，用于统一 Starter 版本管理）
 
 ```xml
 <dependencyManagement>
@@ -55,7 +68,7 @@ g2rain-spring-boot-starter 是本仓库的**聚合父 POM**，统一管理版本
 </dependencyManagement>
 ```
 
-#### 按需引入（示例版本请与 Maven Central 或本仓库 `revision` 保持一致）
+#### 按需引入 Starter（示例版本请与 Maven Central 或本仓库 `revision` 保持一致）
 
 ```xml
 <!-- 核心防护（常用作基础依赖） -->
