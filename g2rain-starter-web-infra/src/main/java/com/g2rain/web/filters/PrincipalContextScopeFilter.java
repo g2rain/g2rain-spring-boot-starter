@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Locale;
 
 /**
  * <p>{@code PrincipalContextScopeFilter} 是一个 Spring {@link OncePerRequestFilter} 实现类，
@@ -67,7 +69,9 @@ public class PrincipalContextScopeFilter extends OncePerRequestFilter {
     @Override
     public void doFilterInternal(@Nonnull HttpServletRequest request, @Nonnull HttpServletResponse response, @Nonnull FilterChain chain) throws ServletException, IOException {
         try {
-            PrincipalContextHolder.callWith(PrincipalContext.of(), () -> {
+            PrincipalContext context = PrincipalContext.of();
+            context.setAcceptLanguage(resolveAcceptLanguage(request));
+            PrincipalContextHolder.callWith(context, () -> {
                 chain.doFilter(request, response);
                 return null;
             });
@@ -80,5 +84,12 @@ public class PrincipalContextScopeFilter extends OncePerRequestFilter {
             }
             throw new ServletException(e);
         }
+    }
+
+    private String resolveAcceptLanguage(HttpServletRequest request) {
+        return Collections.list(request.getLocales()).stream()
+            .findFirst()
+            .orElse(Locale.getDefault())
+            .toLanguageTag();
     }
 }

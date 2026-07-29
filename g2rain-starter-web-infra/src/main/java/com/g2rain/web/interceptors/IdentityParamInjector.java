@@ -7,6 +7,7 @@ import com.g2rain.common.utils.Strings;
 import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.web.HttpRequestWrapper;
 import com.g2rain.web.interceptors.annotations.IdentityInject;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -30,6 +31,7 @@ import java.util.function.Supplier;
  * </ul>
  *
  * <p>只有当请求不是来自后台调用且方法上标注了 {@link IdentityInject} 注解时，才会执行参数注入逻辑。</p>
+ * <p>ASYNC / ERROR 派发直接跳过注入（见 {@link #preHandle} 内说明）。</p>
  *
  * <p><b>使用示例：</b></p>
  * <pre>{@code
@@ -58,6 +60,25 @@ public record IdentityParamInjector() implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) {
+        /*
+         * 为何会出现 ASYNC：
+         * 与 LoginGuardInterceptor 相同。SseEmitter 等异步返回值在 complete 后，容器会 ASYNC 再派发，
+         * 以便补跑 postHandle / afterCompletion；该派发会再次进入 preHandle，但不会再次执行 Controller。
+         *
+         * 为何要跳过注入：
+         * 身份参数已在首次 REQUEST 派发时注入。ASYNC 时 OncePerRequestFilter（含 HttpWrapperFilter、
+         * PrincipalContextScopeFilter）默认不再执行，请求未必仍是 HttpRequestWrapper，身份上下文也可能已清空；
+         * 若此处继续注入，轻则无意义，重则因非 HttpRequestWrapper 抛出 SYSTEM_INTERNAL_ERROR。
+         * ERROR 派发同理，无需再注入业务参数。
+         *
+         * 对后续业务的影响：
+         * 无影响。Controller 参数解析只发生在 REQUEST 阶段；ASYNC 收尾不进 Controller，跳过注入不会漏参。
+         */
+        DispatcherType dispatcherType = request.getDispatcherType();
+        if (dispatcherType == DispatcherType.ASYNC || dispatcherType == DispatcherType.ERROR) {
+            return true;
+        }
+
         // 判断是否是微服务之间调用或非 Controller 方法，跳过注入
         if (PrincipalContextHolder.isBackEnd() || !(handler instanceof HandlerMethod method)) {
             return true;
