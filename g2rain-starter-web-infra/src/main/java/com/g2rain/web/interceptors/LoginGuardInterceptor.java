@@ -6,6 +6,7 @@ import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.exception.SystemErrorCode;
 import com.g2rain.common.web.PrincipalContextHolder;
 import com.g2rain.web.interceptors.annotations.LoginGuard;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -24,6 +25,7 @@ import java.util.Optional;
  *
  * <p><b>逻辑说明：</b></p>
  * <ul>
+ *     <li>ASYNC / ERROR 派发直接放行（见 {@link #preHandle} 内说明）。</li>
  *     <li>如果是微服务之间的后台调用，或非 Controller 方法调用，则直接放行。</li>
  *     <li>如果方法上标注了 {@link LoginGuard} 注解，可配置 {@code require} 和 {@code anonymous}。</li>
  *     <li>根据当前 {@link PrincipalContextHolder#getSessionType()} 判断会话类型并验证登录状态。</li>
@@ -56,6 +58,29 @@ public record LoginGuardInterceptor() implements HandlerInterceptor {
      */
     @Override
     public boolean preHandle(@NonNull HttpServletRequest req, @NonNull HttpServletResponse rsp, @NonNull Object handler) {
+        /*
+         * 为何会出现 ASYNC：
+         * Controller 返回 SseEmitter / DeferredResult / StreamingResponseBody 等时，Spring 会把请求切到异步：
+         * 先释放 Servlet 工作线程，HTTP 连接保持打开继续推流或等待结果。
+         * 异步结束（如 SseEmitter.complete）后，容器会再做一次 DispatcherType.ASYNC 派发，
+         * 目的是补跑拦截器的 postHandle / afterCompletion，保证拦截器生命周期完整。
+         * 这次派发会再次进入 preHandle，但不会再次执行 Controller。
+         *
+         * 为何要跳过鉴权：
+         * 登录已在首次 REQUEST 派发时校验过。ASYNC 再派发时 Filter（OncePerRequestFilter）默认不再执行，
+         * PrincipalContext 往往已随原请求线程结束被清理，若此处再鉴权会误报「未认证」，
+         * 且响应 Content-Type 可能已是 text/event-stream，异常处理器也无法正常写 JSON。
+         * ERROR 派发同理：属于容器错误页/错误转发，不应再做登录校验。
+         *
+         * 对后续业务的影响：
+         * 无影响。跳过的只是收尾派发上的二次鉴权；真正的业务 Controller 仍只在 REQUEST 阶段执行一次，
+         * 且当时已完成登录校验。客户端无法伪造「只走 ASYNC、不走 REQUEST」的请求。
+         */
+        DispatcherType dispatcherType = req.getDispatcherType();
+        if (dispatcherType == DispatcherType.ASYNC || dispatcherType == DispatcherType.ERROR) {
+            return true;
+        }
+
         // 判断是否为微服务间调用或非 Controller 方法，直接放行
         if (PrincipalContextHolder.isBackEnd() || !(handler instanceof HandlerMethod method)) {
             return true;

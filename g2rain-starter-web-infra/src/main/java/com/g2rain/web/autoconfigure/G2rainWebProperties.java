@@ -35,16 +35,6 @@ public class G2rainWebProperties {
     // ========================= Filters =========================
 
     /**
-     * HTTP 请求响应包装器 Filter 是否启用
-     */
-    private boolean httpWrapperFilterEnabled = true;
-
-    /**
-     * HTTP 请求响应包装器 Filter 执行顺序
-     */
-    private int httpWrapperFilterOrder = 100;
-
-    /**
      * 身份主体作用域 Filter 是否启用
      */
     private boolean principalContextScopeFilterEnabled = true;
@@ -52,7 +42,7 @@ public class G2rainWebProperties {
     /**
      * 身份主体作用域 Filter 执行顺序
      */
-    private int principalContextScopeFilterOrder = 120;
+    private int principalContextScopeFilterOrder = 100;
 
     /**
      * 全局异常 Filter 是否启用
@@ -67,7 +57,17 @@ public class G2rainWebProperties {
     /**
      * 全局异常 Filter 执行顺序
      */
-    private int globalExceptionFilterOrder = 150;
+    private int globalExceptionFilterOrder = 120;
+
+    /**
+     * HTTP 请求响应包装器 Filter 是否启用
+     */
+    private boolean httpWrapperFilterEnabled = true;
+
+    /**
+     * HTTP 请求响应包装器 Filter 执行顺序
+     */
+    private int httpWrapperFilterOrder = 150;
 
     /**
      * 身份主体上下文注入 Filter 是否启用
