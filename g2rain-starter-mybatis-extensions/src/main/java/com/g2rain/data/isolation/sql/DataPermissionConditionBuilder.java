@@ -40,43 +40,44 @@ public final class DataPermissionConditionBuilder {
             return null;
         }
 
-        String tablePrefix = Objects.nonNull(table.getAlias()) ? table.getAlias().getName() + "." : "";
+        if (Objects.isNull(policy)) {
+            return null;
+        }
+
         List<Expression> parts = new ArrayList<>();
-
-        if (Objects.nonNull(policy)) {
-            if (meta.hasUserColumn()) {
-                Long userId = PrincipalContextHolder.getUserId();
-                if (Objects.nonNull(userId)) {
-                    parts.add(new EqualsTo(new Column(tablePrefix + meta.getUserIdColumnName()), new LongValue(userId)));
-                }
+        String tablePrefix = Objects.nonNull(table.getAlias()) ? table.getAlias().getName() + "." : "";
+        if (meta.hasUserColumn()) {
+            Long userId = PrincipalContextHolder.getUserId();
+            if (Objects.nonNull(userId)) {
+                parts.add(new EqualsTo(new Column(tablePrefix + meta.getUserIdColumnName()), new LongValue(userId)));
             }
+        }
 
-            boolean groupAllowed = read ? policy.isGroupRead() : policy.isGroupWrite();
-            boolean otherAllowed = read ? policy.isOtherRead() : policy.isOtherWrite();
+        boolean groupAllowed = read ? policy.isGroupRead() : policy.isGroupWrite();
+        boolean otherAllowed = read ? policy.isOtherRead() : policy.isOtherWrite();
 
-            if (groupAllowed && meta.hasDeptColumn()) {
-                String deptPaths = PrincipalContextHolder.getDeptPath();
-                if (StringUtils.hasText(deptPaths)) {
-                    for (String deptPath : deptPaths.split(",")) {
-                        String trimmed = deptPath.trim();
-                        if (!StringUtils.hasText(trimmed)) {
-                            continue;
-                        }
-
-                        LikeExpression like = new LikeExpression();
-                        like.setLeftExpression(new Column(tablePrefix + meta.getDeptPathColumnName()));
-                        like.setRightExpression(new StringValue(trimmed + "%"));
-                        parts.add(like);
+        if (groupAllowed && meta.hasDeptColumn()) {
+            String deptPaths = PrincipalContextHolder.getDeptPath();
+            if (StringUtils.hasText(deptPaths)) {
+                for (String deptPath : deptPaths.split(",")) {
+                    String trimmed = deptPath.trim();
+                    if (!StringUtils.hasText(trimmed)) {
+                        continue;
                     }
+
+                    LikeExpression like = new LikeExpression();
+                    like.setLeftExpression(new Column(tablePrefix + meta.getDeptPathColumnName()));
+                    like.setRightExpression(new StringValue(trimmed + "%"));
+                    parts.add(like);
                 }
             }
+        }
 
-            if (otherAllowed && StringUtils.hasText(policy.getOtherPermRule())) {
-                try {
-                    parts.add(CCJSqlParserUtil.parseCondExpression(policy.getOtherPermRule()));
-                } catch (JSQLParserException ignored) {
-                    // 规则无法解析则跳过该分支
-                }
+        if (otherAllowed && StringUtils.hasText(policy.getOtherPermRule())) {
+            try {
+                parts.add(CCJSqlParserUtil.parseCondExpression(policy.getOtherPermRule()));
+            } catch (JSQLParserException ignored) {
+                // 规则无法解析则跳过该分支
             }
         }
 

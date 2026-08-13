@@ -1,9 +1,10 @@
 package com.g2rain.identity;
 
 
+import com.g2rain.common.exception.BusinessException;
+import com.g2rain.common.exception.SystemErrorCode;
 import com.g2rain.common.id.IdGenerator;
 import com.g2rain.common.model.Result;
-import feign.FeignException;
 
 import java.util.Objects;
 import java.util.function.Function;
@@ -31,18 +32,15 @@ public class IdGeneratorImpl implements IdGenerator {
 
     @Override
     public Long generateSnowflakeId() {
-        return safeGeneratorId(biz -> idGeneratorClient.getSnowflakeId(), null);
+        return safeGeneratorId(_ -> idGeneratorClient.getSnowflakeId(), null);
     }
 
     private Long safeGeneratorId(Function<String, Result<Long>> function, String bizTag) {
-        try {
-            Result<Long> result = function.apply(bizTag);
-            if (Objects.isNull(result) || !result.isSuccess() || Objects.isNull(result.getData())) {
-                return -1L;
-            }
-            return result.getData();
-        } catch (FeignException e) {
-            return -1L;
+        Result<Long> result = function.apply(bizTag);
+        if (Objects.isNull(result) || !result.isSuccess() || Objects.isNull(result.getData())) {
+            throw new BusinessException(SystemErrorCode.SYSTEM_INTERNAL_ERROR, "获取 ID 失败");
         }
+
+        return result.getData();
     }
 }

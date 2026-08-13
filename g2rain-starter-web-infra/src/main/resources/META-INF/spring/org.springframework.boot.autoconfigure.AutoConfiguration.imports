@@ -1,1 +1,2 @@
 com.g2rain.web.autoconfigure.WebAutoConfiguration
+com.g2rain.web.autoconfigure.JsonConverterAutoConfiguration

@@ -1,5 +1,6 @@
 package com.g2rain.web;
 
+import com.g2rain.web.autoconfigure.HttpMessageConverterChainTest;
 import com.g2rain.web.autoconfigure.WebAutoConfigurationTest;
 import com.g2rain.web.filters.AccessLogFilterTest;
 import com.g2rain.web.filters.HttpWrapperFilterTest;
@@ -23,7 +24,8 @@ import org.junit.platform.suite.api.SuiteDisplayName;
     IdentityParamInjectorTest.class,
 
     // 自动配置测试
-    WebAutoConfigurationTest.class
+    WebAutoConfigurationTest.class,
+    HttpMessageConverterChainTest.class
 })
 public class AllTestsSuite {
 }

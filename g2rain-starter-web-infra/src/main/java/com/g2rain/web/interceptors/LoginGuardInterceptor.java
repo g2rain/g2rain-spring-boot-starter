@@ -77,6 +77,10 @@ public record LoginGuardInterceptor() implements HandlerInterceptor {
             return true;
         }
 
+        if (SessionType.isAnonymous(sessionType)) {
+            return true;
+        }
+
         throw new BusinessException(SystemErrorCode.UNAUTHENTICATED);
     }
 }
