@@ -51,8 +51,7 @@ public class DataIsolationMeta {
      */
     public static DataIsolationMeta genObjectByAnnotation(DataIsolation dataIsolation) {
         DataIsolationMeta meta = new DataIsolationMeta();
-        meta.setIsolationModule(dataIsolation.isolationModule());
-        meta.setIsolationTable(dataIsolation.isolationTable());
+        meta.setPermissionTableName(dataIsolation.permissionTableName());
         meta.setOrganIdColumnName(dataIsolation.organIdColumnName());
         meta.setOrganIdPropertyName(dataIsolation.organIdPropertyName());
         meta.setPermissionTableName(dataIsolation.permissionTableName());
