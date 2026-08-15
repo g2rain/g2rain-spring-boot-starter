@@ -1,4 +1,4 @@
-# g2rain-spring-boot-starter
+﻿# g2rain-spring-boot-starter
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.g2rain/g2rain-spring-boot-starter.svg)](https://search.maven.org/artifact/com.g2rain/g2rain-spring-boot-starter)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
