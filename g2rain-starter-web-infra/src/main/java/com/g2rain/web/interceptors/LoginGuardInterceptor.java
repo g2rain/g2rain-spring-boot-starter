@@ -106,6 +106,12 @@ public record LoginGuardInterceptor() implements HandlerInterceptor {
             return true;
         }
 
+        if (SessionType.isMember(sessionType)
+            && Objects.nonNull(PrincipalContextHolder.getMemberId())
+            && PrincipalContextHolder.getMemberId() > 0L) {
+            return true;
+        }
+
         throw new BusinessException(SystemErrorCode.UNAUTHENTICATED);
     }
 }
