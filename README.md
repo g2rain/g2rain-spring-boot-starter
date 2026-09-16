@@ -13,9 +13,9 @@
 
 下一代AI软件开发范式，AI原生Agent平台，开源的企业级SaaS底座。
 
-g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven 子模块组成，覆盖 Web 基础设施、数据权限隔离、Redis、缓存同步、分布式 ID、Feign、OpenTelemetry、Redis Stream、OpenAPI 与部门主体增强；通过 AutoConfiguration.imports、条件装配和可覆盖 Bean 将平台约定接入业务服务；作为平台后端研发支撑层被多个 g2rain 服务复用
+g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven 子模块组成，覆盖 Web 基础设施、数据权限隔离、Redis、缓存同步、分布式 ID、Feign、OpenTelemetry、Redis Stream、OpenAPI 与部门主体增强。项目通过 `AutoConfiguration.imports`、条件装配和可覆盖 Bean，将平台约定按需接入业务服务。
 
-[官网](https://www.g2rain.com) · [Issues](https://github.com/g2rain/g2rain/issues) · [Discussions](https://github.com/g2rain/g2rain/discussions)
+[工程文档](docs/index.md) · [官网](https://www.g2rain.com) · [Issues](https://github.com/g2rain/g2rain/issues) · [Discussions](https://github.com/g2rain/g2rain/discussions)
 
 ## 目录
 
@@ -46,7 +46,7 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 
 ## 项目简介
 
-g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven 子模块组成，覆盖 Web 基础设施、数据权限隔离、Redis、缓存同步、分布式 ID、Feign、OpenTelemetry、Redis Stream、OpenAPI 与部门主体增强；通过 AutoConfiguration.imports、条件装配和可覆盖 Bean 将平台约定接入业务服务；作为平台后端研发支撑层被多个 g2rain 服务复用
+g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven 子模块组成。它统一 Java、Spring Boot、Spring Cloud、G2rain 公共组件及构建插件版本，并把平台基础设施封装为可独立选择的自动配置模块。
 
 ## 平台定位
 
@@ -57,11 +57,6 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 该仓库聚焦于 `Spring Boot 自动配置、后端集成规范与平台能力快速接入`。
 
 核心对象包括：
-- Feign 客户端
-- OpenAPI 文档
-- OpenTelemetry 链路
-- Redis Stream Binder
-- Redis 缓存与分布式锁
 - 分布式 ID
 - 缓存同步事件
 - 配置属性
@@ -70,6 +65,11 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 - 数据权限策略
 - 主体
 - 自动配置
+- Feign 客户端
+- OpenAPI 文档
+- OpenTelemetry 链路
+- Redis 缓存与分布式锁
+- Redis Stream Binder
 
 主要流程包括：
 - Spring Boot 启动时发现 AutoConfiguration.imports 并按条件装配模块的流程
@@ -92,7 +92,7 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 | Redis Stream Binder | 实现 Spring Cloud Stream Binder，将 Redis Stream 作为消息传输通道并暴露 binder 配置属性。 |
 | OpenAPI 文档 | 根据应用名、API 版本和描述自动创建 OpenAPI 元数据。 |
 | 部门主体增强 | 按需通过 REST 或 OpenFeign 查询部门信息，并使用 PrincipalEnricher 补充当前主体上下文。 |
-| Aegis 依赖聚合 | 以 g2rain-starter-aegis-core 聚合平台安全基础依赖，供需要安全能力的模块统一复用。 |
+| Aegis 核心聚合 | `g2rain-starter-aegis-core` 是 POM 聚合模块，组合 Web 基础设施、身份客户端和 OpenTelemetry 追踪，作为服务核心基础能力的一站式依赖入口。 |
 
 ## 使用场景
 
@@ -138,7 +138,7 @@ flowchart TD
 | 类别 | 说明 |
 | --- | --- |
 | 运行时 | Java 25、Spring Boot 4.0.5、Spring Cloud 2025.1.1 |
-| 安全与令牌 | g2rain-starter-aegis-core |
+| 核心能力聚合 | g2rain-starter-aegis-core（Web、身份客户端、OpenTelemetry） |
 | 基础设施 | Redis、OpenFeign |
 | 数据访问与缓存 | MyBatis、JSQLParser、Redis、Redisson、Caffeine |
 | 消息与集成 | Spring Cloud Stream、Redis Stream Binder、OpenFeign、RestClient |
@@ -150,7 +150,7 @@ flowchart TD
 
 - JDK 25+
 - Maven 3.9+
-- Spring Boot 4.0.x 业务工程
+- Spring Boot 4.0.5 兼容基线的业务工程
 - 按所选模块准备 Redis、Redisson、Spring Cloud Stream、OpenFeign 或 OpenTelemetry 后端
 - 数据隔离、ID 与部门主体模块需要可访问的 g2rain 平台内部服务
 
@@ -167,47 +167,19 @@ flowchart TD
 
 ## 配置说明
 
-### Web 配置
+| 配置前缀或配置项 | 所属模块 | 说明 |
+| --- | --- | --- |
+| `g2rain.web` | web-infra | Web 总开关、Filter/Interceptor 开关与顺序、异常处理和 Result MixIn。默认顺序为主体作用域 100、全局异常 120、HTTP 包装 150、主体上下文 200、访问日志 300、登录守卫 400、身份参数注入 500。 |
+| `spring.http.converters.preferred-json-mapper` | web-infra | 设为 `g2rain` 时启用 G2rain Jackson HTTP Message Converter。 |
+| `g2rain.data.isolation` | mybatis-extensions | 数据隔离开关，以及组织层级和权限策略服务的名称、URL 与调用路径。 |
+| `g2rain.id.generator` | identity-client | ID 服务名称、直连 URL、上下文路径及雪花/业务 ID 路径。 |
+| `g2rain.principal.department` | department-principal | 部门主体增强开关、服务地址与调用路径。 |
+| `spring.cloud.stream` | cache-sync | 输入/输出 binding、destination、group 与 binder 选择。 |
+| `spring.cloud.stream.redis.binder` | stream-redis | 自定义透传 headers 与无 group 消费模式；Redis 连接仍由 Spring Data Redis 配置提供。 |
+| `g2rain.springdoc` | spring-doc | OpenAPI API 版本与服务描述，标题默认取 `spring.application.name`。 |
+| `management.tracing`、`management.otlp`、`logging.pattern` | tracing-otel | W3C 传播、采样、OTLP 导出与日志关联默认值；业务配置可覆盖。 |
 
-| 配置项 | 说明 |
-| --- | --- |
-| `g2rain.web.enabled` | Web 基础设施总开关，默认启用；各过滤器和拦截器可通过对应 *-enabled 属性单独控制。 |
-
-### JSON 配置
-
-| 配置项 | 说明 |
-| --- | --- |
-| `spring.http.converters.preferred-json-mapper` | 设为 g2rain 时启用 G2rainJacksonHttpMessageConverter。 |
-
-### 数据隔离
-
-| 配置项 | 说明 |
-| --- | --- |
-| `g2rain.data.isolation.enabled` | 数据权限隔离开关，默认启用。 |
-
-### ID 客户端
-
-| 配置项 | 说明 |
-| --- | --- |
-| `g2rain.id.generator` | 配置分布式 ID 服务客户端参数。 |
-
-### 部门主体
-
-| 配置项 | 说明 |
-| --- | --- |
-| `g2rain.principal.department.enabled` | 部门主体增强开关，默认启用；同组属性配置内部服务调用。 |
-
-### 消息 Binder
-
-| 配置项 | 说明 |
-| --- | --- |
-| `spring.cloud.stream.redis.binder` | 配置 Redis Stream Binder 的连接和运行参数。 |
-
-### API 文档
-
-| 配置项 | 说明 |
-| --- | --- |
-| `g2rain.springdoc.api-version / description` | 配置 OpenAPI 版本与服务描述，应用名取自 spring.application.name。 |
+完整配置边界见 [配置参考](docs/api/configuration.md)。配置属性类是运行行为的事实来源，配置元数据主要用于 IDE 提示。
 
 ## 构建与发布
 
@@ -216,16 +188,20 @@ flowchart TD
 | 全部 Starter 模块 | `mvn clean package` | `各子模块 target/*.jar 与聚合父 POM` | 从聚合根项目构建 11 个 Starter 子模块。 |
 | 本地 Maven 安装 | `mvn clean install` | `本地 Maven 仓库产物` | 安装到本地 Maven 仓库，便于业务工程本地验证依赖。 |
 | 单模块及其依赖 | `mvn -pl <module> -am clean package` | `指定 Starter 及所需上游模块` | 只验证某个子模块时使用 Maven reactor 的 -pl/-am 选项。 |
+| 正式发布 | `mvn -P release clean deploy` | `Maven Central 发布包` | 生成源码、Javadoc 和 GPG 签名并自动发布；仅在版本、标签和凭据均确认后执行。 |
 
 ## 代码质量与测试
 
 | 检查项 | 命令 | 说明 |
 | --- | --- | --- |
-| Maven Enforcer | `mvn validate` | 约束 JDK 版本、Maven 版本与依赖规则。 |
+| Maven 测试 | `mvn test` | 构建 12 个 Reactor 项目并运行单元测试。2026-09-06 实测执行 101 个测试，0 失败、0 错误、0 跳过。 |
+| Maven Enforcer | `mvn validate` | 约束 JDK 25 及依赖上界冲突。 |
 | Checkstyle | `mvn checkstyle:check` | 检查 Java 代码风格与组织规范。 |
 | PMD | `mvn pmd:check` | 执行静态规则检查，识别潜在代码问题。 |
 | SpotBugs | `mvn spotbugs:check` | 识别潜在缺陷和风险代码。 |
-| JaCoCo | `mvn test jacoco:report` | 运行测试并生成覆盖率报告。 |
+| JaCoCo | `mvn test jacoco:report` | 当前 Surefire `argLine` 会覆盖 JaCoCo 代理参数，实测未生成执行数据；修正参数合并前不能将该命令视为有效覆盖率验证。 |
+
+当前测试集中在 Web、Data Redis、Cache Sync 和 Stream Redis。Identity、Tracing、MyBatis 数据隔离、Feign、SpringDoc 与 Department Principal 尚无实际执行的测试，详见 [测试策略](docs/development/testing.md)。
 
 ## 接入示例
 
@@ -259,7 +235,7 @@ flowchart TD
 
 | 模块 | 职责说明 | 代码线索 |
 | --- | --- | --- |
-| g2rain-starter-aegis-core | 聚合平台安全基础依赖，作为其他安全相关 Starter 的轻量依赖入口。 | g2rain-starter-aegis-core/pom.xml |
+| g2rain-starter-aegis-core | 聚合 Web 基础设施、身份客户端与 OpenTelemetry 追踪，是 POM 类型的核心能力组合入口。 | g2rain-starter-aegis-core/pom.xml |
 | g2rain-starter-web-infra | 装配 HTTP 包装、主体上下文、统一异常、访问日志、登录守卫、身份注入和 JSON Converter。 | WebAutoConfiguration、JsonConverterAutoConfiguration、G2rainWebProperties |
 | g2rain-starter-mybatis-extensions | 为 MyBatis 提供数据权限策略、组织范围、SQL 隔离处理器及客户端适配。 | IsolationAutoConfiguration、IsolationQueryProcessor、DataIsolationSelectVisitor |
 | g2rain-starter-data-redis | 装配字符串/泛型 Redis Helper 与 Redisson 分布式锁。 | RedisAutoConfiguration、StringRedisHelper、GenericRedisHelper、DistributedLock |
@@ -300,7 +276,11 @@ flowchart TD
 
 | 仓库 | 协作关系 |
 | --- | --- |
-| g2rain-common | 复用平台公共规范、通用模型、工具能力或基础依赖约束。 |
+| g2rain-common | 提供 Result、异常、身份上下文、ID、缓存同步等公共契约。 |
+| g2rain-mybatis-extensions | 提供底层 MyBatis 处理器、SQL 解析和分页组件，本仓库在其上装配数据隔离 Starter。 |
+| g2rain-infra | 为 identity-client 提供默认的分布式 ID 服务。 |
+| g2rain-basis | 为 MyBatis 数据隔离提供默认的组织层级服务。 |
+| g2rain-department | 为部门主体增强和数据权限策略解析提供默认服务。 |
 
 ## 参与贡献
 
