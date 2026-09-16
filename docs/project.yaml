@@ -1,0 +1,52 @@
+schemaVersion: 1
+project:
+  name: g2rain-spring-boot-starter
+  family: backend-integration-tool
+  implementationType: spring-boot-starter-suite
+  description: G2rain Spring Boot Starter 聚合与基础设施自动配置套件。
+  repositoryPath: D:\\github\\g2rain-spring-boot-starter
+  ownership: G2rain platform infrastructure
+  build:
+    system: maven
+    javaRelease: 25
+    springBoot: 4.0.5
+    springCloud: 2025.1.1
+    versionProperty: revision
+    version: 1.0.4
+  baseline:
+    name: spring-boot-starter-suite
+    version: 1.0.0-local
+    status: local
+    centralProfileAvailable: false
+    centralCatalogStatus: not-registered
+  modules:
+    - g2rain-starter-aegis-core
+    - g2rain-starter-web-infra
+    - g2rain-starter-mybatis-extensions
+    - g2rain-starter-data-redis
+    - g2rain-starter-cache-sync
+    - g2rain-starter-identity-client
+    - g2rain-starter-feign-plus
+    - g2rain-starter-tracing-otel
+    - g2rain-starter-stream-redis
+    - g2rain-starter-spring-doc
+    - g2rain-starter-department-principal
+  commands:
+    test: mvn test
+    verify: mvn clean verify
+    release: mvn -P release clean deploy
+  validation:
+    observedAt: 2026-09-06
+    command: mvn test
+    status: passed
+    reactorProjects: 12
+    testsRun: 101
+    failures: 0
+    errors: 0
+    skipped: 0
+    coverage: not-produced
+  documentation:
+    entry: docs/index.md
+    deviations: docs/architecture/deviations.md
+    modules: docs/architecture/modules.md
+    configuration: docs/api/configuration.md

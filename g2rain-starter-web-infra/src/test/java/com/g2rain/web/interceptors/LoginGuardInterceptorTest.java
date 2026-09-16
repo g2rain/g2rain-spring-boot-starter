@@ -173,6 +173,56 @@ public class LoginGuardInterceptorTest {
     }
 
     @Test
+    @DisplayName("测试 MEMBER 会话且 memberId 为正时放行")
+    void testPreHandleWithMemberSessionAndMemberId() throws Exception {
+        PrincipalContextHolder.runWith(PrincipalContext.of(), () -> {
+            try {
+                MockHttpServletRequest request = new MockHttpServletRequest();
+                MockHttpServletResponse response = new MockHttpServletResponse();
+
+                PrincipalContextHolder.setApplicationId(1001L);
+                PrincipalContextHolder.setSessionType(SessionType.MEMBER);
+                PrincipalContextHolder.setMemberId(9L);
+
+                TestController controller = new TestController();
+                Method method = controller.getClass().getMethod("protectedMethod");
+                HandlerMethod handler = new HandlerMethod(controller, method);
+
+                boolean result = loginGuardInterceptor.preHandle(request, response, handler);
+
+                assertTrue(result);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
+    @DisplayName("测试 MEMBER 会话但 memberId 非法时拒绝")
+    void testPreHandleWithMemberSessionAndInvalidMemberId() throws Exception {
+        PrincipalContextHolder.runWith(PrincipalContext.of(), () -> {
+            try {
+                MockHttpServletRequest request = new MockHttpServletRequest();
+                MockHttpServletResponse response = new MockHttpServletResponse();
+
+                PrincipalContextHolder.setApplicationId(1001L);
+                PrincipalContextHolder.setSessionType(SessionType.MEMBER);
+                PrincipalContextHolder.setMemberId(0L);
+
+                TestController controller = new TestController();
+                Method method = controller.getClass().getMethod("protectedMethod");
+                HandlerMethod handler = new HandlerMethod(controller, method);
+
+                BusinessException exception = assertThrows(BusinessException.class, () ->
+                    loginGuardInterceptor.preHandle(request, response, handler));
+                assertEquals(String.valueOf(SystemErrorCode.UNAUTHENTICATED.code()), exception.getErrorCode());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @Test
     @DisplayName("测试无认证信息的预处理")
     void testPreHandleWithoutAuthentication() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
