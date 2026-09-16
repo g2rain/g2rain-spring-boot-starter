@@ -16,6 +16,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -55,6 +56,9 @@ import java.util.UUID;
  */
 @Slf4j
 public class AccessLogFilter extends OncePerRequestFilter {
+
+    private static final String MDC_REQUEST_ID = "requestId";
+
     private static final JsonCodec jsonCodec = JsonCodecFactory.instance();
 
     /**
@@ -84,40 +88,45 @@ public class AccessLogFilter extends OncePerRequestFilter {
             PrincipalContextHolder.setRequestId(requestId);
         }
 
+        MDC.put(MDC_REQUEST_ID, requestId);
         String method = request.getMethod();
         String path = request.getServletPath();
 
-        // 记录请求参数、请求体和请求头
-        if (request instanceof HttpRequestWrapper httpRequestWrapper) {
-            log.info("requestId:{}, method:{}, path:{}, param:{}, body:{}, header:{}",
-                requestId, method, path,
-                jsonCodec.obj2str(httpRequestWrapper.getParameterMap()),
-                jsonCodec.obj2str(httpRequestWrapper.getBody()),
-                headerMapForLogging(httpRequestWrapper.getHeaderMap())
-            );
-        }
-
-        chain.doFilter(request, response);
-
-        // 响应日志处理
-        String contentType = response.getContentType();
-        if (MediaTypes.isJson(contentType)) {
-            if (response instanceof HttpResponseWrapper httpResponseWrapper) {
-                String result = httpResponseWrapper.getBody();
-                if (Objects.isNull(result)) {
-                    result = "NULL";
-                } else if (result.length() > 1000) {
-                    result = "result length " + result.length();
-                }
-
-                log.info("requestId:{}, result:{}", requestId, result);
-            } else {
-                log.info("requestId:{}, result:{}, contentType:{}", requestId, "二进制流", contentType);
+        try {
+            // 记录请求参数、请求体和请求头
+            if (request instanceof HttpRequestWrapper httpRequestWrapper) {
+                log.info("requestId:{}, method:{}, path:{}, param:{}, body:{}, header:{}",
+                    requestId, method, path,
+                    jsonCodec.obj2str(httpRequestWrapper.getParameterMap()),
+                    jsonCodec.obj2str(httpRequestWrapper.getBody()),
+                    headerMapForLogging(httpRequestWrapper.getHeaderMap())
+                );
             }
 
-            long endTime = System.currentTimeMillis();
-            long cost = endTime - startTime;
-            log.info("requestId:{}, startTime:{}, endTime:{}, cost:{}ms", requestId, startTime, endTime, cost);
+            chain.doFilter(request, response);
+
+            // 响应日志处理
+            String contentType = response.getContentType();
+            if (MediaTypes.isJson(contentType)) {
+                if (response instanceof HttpResponseWrapper httpResponseWrapper) {
+                    String result = httpResponseWrapper.getBody();
+                    if (Objects.isNull(result)) {
+                        result = "NULL";
+                    } else if (result.length() > 1000) {
+                        result = "result length " + result.length();
+                    }
+
+                    log.info("requestId:{}, result:{}", requestId, result);
+                } else {
+                    log.info("requestId:{}, result:{}, contentType:{}", requestId, "二进制流", contentType);
+                }
+
+                long endTime = System.currentTimeMillis();
+                long cost = endTime - startTime;
+                log.info("requestId:{}, startTime:{}, endTime:{}, cost:{}ms", requestId, startTime, endTime, cost);
+            }
+        } finally {
+            MDC.remove(MDC_REQUEST_ID);
         }
     }
 
