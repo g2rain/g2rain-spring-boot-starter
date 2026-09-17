@@ -30,5 +30,20 @@
             <groupId>io.micrometer</groupId>
             <artifactId>context-propagation</artifactId>
         </dependency>
+        <!-- OpenFeign 出站带 W3C traceparent；无 Feign 时仅多一个 jar，Spring Cloud 侧 ConditionalOnClass 不会装配 -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-micrometer</artifactId>
+        </dependency>
+        <!-- Principal / X-REQUEST-ID → baggage；无 servlet 时 Filter 条件装配跳过 -->
+        <dependency>
+            <groupId>com.g2rain</groupId>
+            <artifactId>g2rain-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 </project>
