@@ -76,8 +76,7 @@ public record LoginGuardInterceptor() implements HandlerInterceptor {
          * 无影响。跳过的只是收尾派发上的二次鉴权；真正的业务 Controller 仍只在 REQUEST 阶段执行一次，
          * 且当时已完成登录校验。客户端无法伪造「只走 ASYNC、不走 REQUEST」的请求。
          */
-        DispatcherType dispatcherType = req.getDispatcherType();
-        if (dispatcherType == DispatcherType.ASYNC || dispatcherType == DispatcherType.ERROR) {
+        if (req.getDispatcherType() != DispatcherType.REQUEST) {
             return true;
         }
 
