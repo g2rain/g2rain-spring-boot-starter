@@ -133,6 +133,47 @@ public record DistributedLock(RedissonClient redisson) {
     }
 
     /**
+     * 使用看门狗模式加锁并执行业务逻辑。
+     *
+     * @param lockKey         锁名称
+     * @param watchdogTimeout 锁租期
+     * @param isFair          是否使用公平锁
+     * @param businessLogic   业务逻辑
+     * @param <T>             返回值类型
+     * @return 业务逻辑返回值
+     * @throws BusinessException 加锁或执行业务逻辑失败时抛出
+     */
+    public <T> T waitLockWithWatchdog(String lockKey, Duration watchdogTimeout, boolean isFair, Supplier<T> businessLogic) {
+        return waitLockWithWatchdog(lockKey, watchdogTimeout, isFair, businessLogic, null);
+    }
+
+    /**
+     * 使用指定租期加锁并执行业务逻辑。
+     * <p>
+     * 注意：{@code watchdogTimeout} 实际作为锁的 {@code leaseTime} 使用，
+     * 锁会在指定时间后自动失效，不会由 Redisson 看门狗自动续租。
+     * 因此业务逻辑执行时间必须小于该租期，否则锁可能在业务执行期间提前失效。
+     *
+     * @param lockKey         锁名称
+     * @param watchdogTimeout 锁租期，超过该时间未释放则自动失效
+     * @param isFair          是否使用公平锁
+     * @param businessLogic   业务逻辑
+     * @param finallyCallback 最终回调，在释放锁前执行
+     * @param <T>             返回值类型
+     * @return 业务逻辑返回值
+     * @throws BusinessException 加锁或执行业务逻辑失败时抛出
+     */
+    public <T> T waitLockWithWatchdog(String lockKey, Duration watchdogTimeout, boolean isFair, Supplier<T> businessLogic, @Nullable Runnable finallyCallback) {
+        RLock lock = getLock(lockKey, isFair);
+        try {
+            lock.lock(watchdogTimeout.toMillis(), TimeUnit.MILLISECONDS);
+            return executeWithUnlock(lock, businessLogic, finallyCallback);
+        } catch (Exception e) {
+            throw new BusinessException(SystemErrorCode.SYSTEM_INTERNAL_ERROR, e);
+        }
+    }
+
+    /**
      * 带 leaseTime 的阻塞加锁。
      *
      * @param lockKey       锁名称

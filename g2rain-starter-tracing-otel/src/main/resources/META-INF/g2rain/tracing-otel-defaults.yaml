@@ -11,8 +11,7 @@ management:
       remote-fields:
         - requestId
       correlation:
-        fields:
-          - requestId
+        fields: []
   otlp:
     metrics:
       export:
@@ -20,6 +19,13 @@ management:
     tracing:
       export:
         enabled: false
+
+# classpath 有 feign-micrometer + OpenFeign 时，出站自动注入 traceparent（matchIfMissing 亦为 true）
+spring:
+  cloud:
+    openfeign:
+      micrometer:
+        enabled: true
 
 logging:
   pattern:

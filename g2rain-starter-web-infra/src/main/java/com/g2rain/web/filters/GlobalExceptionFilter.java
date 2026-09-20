@@ -125,8 +125,11 @@ public class GlobalExceptionFilter extends OncePerRequestFilter {
             BusinessException be = ExceptionConverter.findBusinessExceptionOrDefault(e);
             fail = exceptionProcessor.process(be, PrincipalContextHolder.getAcceptLanguage());
         } finally {
-            // 响应未提交时写回异常信息 JSON
-            if (Objects.nonNull(fail) && !response.isCommitted()) {
+            // 响应未提交且非 SSE 时写回异常信息 JSON
+            String contentType = response.getContentType();
+            boolean eventStream = Objects.nonNull(contentType)
+                && contentType.toLowerCase().startsWith(MediaType.TEXT_EVENT_STREAM_VALUE);
+            if (Objects.nonNull(fail) && !response.isCommitted() && !eventStream) {
                 // 1. 设置状态码和 Header
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setCharacterEncoding(StandardCharsets.UTF_8.name());

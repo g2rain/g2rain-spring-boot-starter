@@ -8,9 +8,9 @@ import com.g2rain.common.exception.SystemErrorCode;
 import com.g2rain.common.model.Result;
 import com.g2rain.common.web.PrincipalContextHolder;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -97,12 +97,12 @@ public class GlobalExceptionHandler {
      * @return 包含错误码和消息的统一 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(BusinessException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleException(BusinessException ex) {
+    public ResponseEntity<Result<Void>> handleException(HttpServletResponse rsp, BusinessException ex) {
         log.error("业务异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         Result<Void> result = exceptionProcessor.process(ex,
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
@@ -114,7 +114,7 @@ public class GlobalExceptionHandler {
      * @return 包含字段错误信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleValidationException(MethodArgumentNotValidException ex) {
+    public ResponseEntity<Result<Void>> handleValidationException(HttpServletResponse rsp, MethodArgumentNotValidException ex) {
         log.error("参数验证失败异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         List<org.springframework.validation.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
         List<FieldError> subErrors = new ArrayList<>(fieldErrors.size());
@@ -166,7 +166,7 @@ public class GlobalExceptionHandler {
             new BusinessException(SystemErrorCode.PARAM_INVALID, subErrors),
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
@@ -177,7 +177,7 @@ public class GlobalExceptionHandler {
      * @return 包含字段错误信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleConstraintViolationException(ConstraintViolationException ex) {
+    public ResponseEntity<Result<Void>> handleConstraintViolationException(HttpServletResponse rsp, ConstraintViolationException ex) {
         log.error("参数校验失败异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         Set<ConstraintViolation<?>> violations = ex.getConstraintViolations();
         List<FieldError> subErrors = new ArrayList<>(violations.size());
@@ -229,7 +229,7 @@ public class GlobalExceptionHandler {
             new BusinessException(SystemErrorCode.PARAM_INVALID, subErrors),
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
@@ -240,7 +240,7 @@ public class GlobalExceptionHandler {
      * @return 包含字段错误信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(BindException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleBindException(BindException ex) {
+    public ResponseEntity<Result<Void>> handleBindException(HttpServletResponse rsp, BindException ex) {
         log.error("参数绑定失败异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         List<org.springframework.validation.FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
         List<FieldError> subErrors = new ArrayList<>(fieldErrors.size());
@@ -285,7 +285,7 @@ public class GlobalExceptionHandler {
             new BusinessException(SystemErrorCode.PARAM_INVALID, subErrors),
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
@@ -295,7 +295,7 @@ public class GlobalExceptionHandler {
      * @return 包含字段类型错误信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(TypeMismatchException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleTypeMismatchException(TypeMismatchException ex) {
+    public ResponseEntity<Result<Void>> handleTypeMismatchException(HttpServletResponse rsp, TypeMismatchException ex) {
         log.error("参数类型不匹配异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         String field = ex.getPropertyName();
         Object value = ex.getValue();
@@ -308,21 +308,21 @@ public class GlobalExceptionHandler {
         Result<Void> result = exceptionProcessor.process(be,
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
      * 处理请求方法不支持异常 {@link HttpRequestMethodNotSupportedException} (405)。
      *
-     * @param request 请求对象
-     * @param ex      捕获的异常
+     * @param req 请求对象
+     * @param ex  捕获的异常
      * @return 包含方法不支持信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @SuppressWarnings("ConstantConditions")
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleHttpRequestMethodNotSupportedException(HttpServletRequest request, HttpRequestMethodNotSupportedException ex) {
+    public ResponseEntity<Result<Void>> handleHttpRequestMethodNotSupportedException(HttpServletRequest req, HttpServletResponse rsp, HttpRequestMethodNotSupportedException ex) {
         log.error("不支持的HTTP方法异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
-        String uri = request.getRequestURI(); // 获取请求 URI
+        String uri = req.getRequestURI(); // 获取请求 URI
         String method = ex.getMethod();
         String[] supportedMethods = ex.getSupportedMethods();
         String supported = String.join(", ", Objects.nonNull(supportedMethods) ? supportedMethods : new String[]{});
@@ -331,20 +331,20 @@ public class GlobalExceptionHandler {
             new BusinessException(SystemErrorCode.METHOD_NOT_SUPPORTED, uri, method, supported),
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
      * 处理请求 Content-Type 不支持异常 {@link HttpMediaTypeNotSupportedException} (415)。
      *
-     * @param request 请求对象
-     * @param ex      捕获的异常
+     * @param req 请求对象
+     * @param ex  捕获的异常
      * @return 包含 Content-Type 不支持信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleHttpMediaTypeNotSupportedException(HttpServletRequest request, HttpMediaTypeNotSupportedException ex) {
+    public ResponseEntity<Result<Void>> handleHttpMediaTypeNotSupportedException(HttpServletRequest req, HttpServletResponse rsp, HttpMediaTypeNotSupportedException ex) {
         log.error("不支持的请求格式异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
-        String uri = request.getRequestURI();
+        String uri = req.getRequestURI();
         MediaType mediaType = ex.getContentType();
         String contentType = Objects.nonNull(mediaType) ? mediaType.toString() : "unknown";
         String supported = ex.getSupportedMediaTypes().stream().map(Object::toString).collect(Collectors.joining(", "));
@@ -353,40 +353,40 @@ public class GlobalExceptionHandler {
             new BusinessException(SystemErrorCode.MEDIA_TYPE_NOT_SUPPORTED, uri, contentType, supported),
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
      * 处理响应 Accept 不支持异常 {@link HttpMediaTypeNotAcceptableException} (406)。
      *
-     * @param request 请求对象
-     * @param ex      捕获的异常
+     * @param req 请求对象
+     * @param ex  捕获的异常
      * @return 包含 Accept 不支持信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleHttpMediaTypeNotAcceptableException(HttpServletRequest request, HttpMediaTypeNotAcceptableException ex) {
+    public ResponseEntity<Result<Void>> handleHttpMediaTypeNotAcceptableException(HttpServletRequest req, HttpServletResponse rsp, HttpMediaTypeNotAcceptableException ex) {
         log.error("客户端Accept类型不支持异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
-        String uri = request.getRequestURI();
+        String uri = req.getRequestURI();
         String supported = ex.getSupportedMediaTypes().stream().map(Object::toString).collect(Collectors.joining(", "));
 
         Result<Void> result = exceptionProcessor.process(
             new BusinessException(SystemErrorCode.MEDIA_TYPE_NOT_ACCEPTABLE, uri, supported),
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
      * 处理请求 Header、PathVariable、参数缺失异常 {@link ServletRequestBindingException}。
      *
-     * @param request 请求对象
-     * @param ex      捕获的异常
+     * @param req 请求对象
+     * @param ex  捕获的异常
      * @return 包含缺失信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(ServletRequestBindingException.class)
-    public ResponseEntity<@NonNull Result<Void>> handleServletRequestBindingException(HttpServletRequest request, ServletRequestBindingException ex) {
+    public ResponseEntity<Result<Void>> handleServletRequestBindingException(HttpServletRequest req, HttpServletResponse rsp, ServletRequestBindingException ex) {
         log.error("请求参数绑定异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
-        String uri = request.getRequestURI();
+        String uri = req.getRequestURI();
         String type;
         String name;
 
@@ -413,7 +413,7 @@ public class GlobalExceptionHandler {
             new BusinessException(SystemErrorCode.REQUEST_BINDING_ERROR, uri, type, name),
             PrincipalContextHolder.getAcceptLanguage()
         );
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return respond(rsp, result);
     }
 
     /**
@@ -423,12 +423,28 @@ public class GlobalExceptionHandler {
      * @return 包含系统内部错误信息的 {@link Result} 响应，HTTP 状态码 200
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<@NonNull Result<Void>> handleException(Exception ex) {
+    public ResponseEntity<Result<Void>> handleException(HttpServletResponse rsp, Exception ex) {
         log.error("全局异常处理-{}: {}", ex.getClass().getSimpleName(), ex.getMessage(), ex);
         Result<Void> result = exceptionProcessor.process(
             new BusinessException(SystemErrorCode.SYSTEM_INTERNAL_ERROR, ex.getMessage()),
             PrincipalContextHolder.getAcceptLanguage()
         );
+        return respond(rsp, result);
+    }
+
+    /**
+     * SSE / 响应已提交时不再写 JSON {@link Result}，避免二次 {@code HttpMessageNotWritableException}。
+     */
+    private ResponseEntity<Result<Void>> respond(HttpServletResponse response, Result<Void> result) {
+        if (response.isCommitted()) {
+            return null;
+        }
+
+        String contentType = response.getContentType();
+        if (Objects.nonNull(contentType) && contentType.toLowerCase().startsWith(MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            return null;
+        }
+
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

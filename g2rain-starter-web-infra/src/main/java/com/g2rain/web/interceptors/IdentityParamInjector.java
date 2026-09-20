@@ -74,8 +74,7 @@ public record IdentityParamInjector() implements HandlerInterceptor {
          * 对后续业务的影响：
          * 无影响。Controller 参数解析只发生在 REQUEST 阶段；ASYNC 收尾不进 Controller，跳过注入不会漏参。
          */
-        DispatcherType dispatcherType = request.getDispatcherType();
-        if (dispatcherType == DispatcherType.ASYNC || dispatcherType == DispatcherType.ERROR) {
+        if (request.getDispatcherType() != DispatcherType.REQUEST) {
             return true;
         }
 
