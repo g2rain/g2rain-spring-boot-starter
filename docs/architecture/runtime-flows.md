@@ -18,4 +18,4 @@
 
 ## 追踪与文档
 
-`tracing-otel` 以低优先级默认项启用 W3C 传播、requestId baggage 和日志关联，默认关闭 OTLP metrics/tracing 导出。`spring-doc` 根据应用名生成 OpenAPI Info，并隐藏标记为 `@Schema(hidden=true)` 的属性。
+`tracing-otel` 以低优先级默认项启用 W3C 传播、requestId baggage 和日志关联，默认关闭 OTLP metrics/tracing 导出。环境默认项由 `OpenTelemetryTracingPostProcessor` 在容器刷新前加载；容器内的 `OpenTelemetryTracingAutoConfiguration` 则在 OTel 位于类路径时向 `Contexts` 注册 Micrometer `ContextSnapshot` 与 MDC 传播器。虚拟线程或线程池任务必须先经 `Contexts` / `ContextExecutors` 包装，才能在执行后恢复并清理这些上下文。`spring-doc` 根据应用名生成 OpenAPI Info，并隐藏标记为 `@Schema(hidden=true)` 的属性。

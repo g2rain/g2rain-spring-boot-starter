@@ -13,4 +13,4 @@
         -> Redis Stream Binder / OpenAPI / 部门主体
 ```
 
-各 Starter 的装配边界由类路径、Bean、配置属性与 Spring Boot 自动配置顺序共同决定。跨服务能力通过 Feign/RestClient、Spring Cloud Stream 或 Redis 连接外部系统，因此业务应用仍负责提供端点、凭据、连接和运行环境。
+各 Starter 的装配边界由类路径、Bean、配置属性与 Spring Boot 自动配置顺序共同决定。跨服务能力通过 Feign/RestClient、Spring Cloud Stream 或 Redis 连接外部系统，因此业务应用仍负责提供端点、凭据、连接和运行环境。`tracing-otel` 还会将 Micrometer ContextSnapshot 与 MDC 注册为 `g2rain-common` 的可选上下文传播器；业务在虚拟线程或线程池中执行且依赖主体、链路或 MDC 时，仍须通过 `Contexts` 或 `ContextExecutors` 包装任务。

@@ -8,6 +8,7 @@
 - 根 POM 统一版本、依赖版本、编译、测试、静态检查、覆盖率与发布插件。
 - 每个功能 Starter 独立成模块；`g2rain-starter-aegis-core` 仅聚合核心依赖。
 - 自动配置通过 `AutoConfiguration.imports` 注册，环境前置处理器通过 `spring.factories` 注册。
+- `tracing-otel` 的容器内自动配置仅在 OTel API 位于类路径时生效；它向 `g2rain-common` 注册 OTel/MDC 上下文传播器，不替代业务侧对异步任务的显式包装。
 - 用户可替换的基础设施 Bean 应使用条件装配，避免无条件覆盖业务配置。
 - 发布产物包含源码、Javadoc 与 GPG 签名，并提交 Maven Central。
 

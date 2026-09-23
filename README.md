@@ -13,7 +13,7 @@
 
 下一代AI软件开发范式，AI原生Agent平台，开源的企业级SaaS底座。
 
-g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven 子模块组成，覆盖 Web 基础设施、数据权限隔离、Redis、缓存同步、分布式 ID、Feign、OpenTelemetry、Redis Stream、OpenAPI 与部门主体增强。项目通过 `AutoConfiguration.imports`、条件装配和可覆盖 Bean，将平台约定按需接入业务服务。
+g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven 子模块组成，覆盖 Web 基础设施、数据权限隔离、Redis、缓存同步、分布式 ID、Feign、OpenTelemetry、Redis Stream、OpenAPI 与部门主体增强。项目通过 `AutoConfiguration.imports`、条件装配和可覆盖 Bean，将平台约定按需接入业务服务；`tracing-otel` 可为经 `Contexts` 或 `ContextExecutors` 包装的异步任务传播 OTel/MDC 上下文。
 
 [工程文档](docs/index.md) · [官网](https://www.g2rain.com) · [Issues](https://github.com/g2rain/g2rain/issues) · [Discussions](https://github.com/g2rain/g2rain/discussions)
 
@@ -89,6 +89,7 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 | 分布式 ID 客户端 | 装配 IdGeneratorClient 和 IdGeneratorImpl，通过 g2rain.id.generator 配置接入平台发号服务。 |
 | Feign 增强 | 集中装配 g2rain 平台的 OpenFeign 客户端增强能力和调用约定。 |
 | OpenTelemetry 追踪 | 通过自动配置与 EnvironmentPostProcessor 注入追踪相关默认属性并接入 OpenTelemetry。 |
+| 异步上下文传播 | OTel 位于类路径时，tracing-otel 向 g2rain-common 的 Contexts 注册 Micrometer ContextSnapshot 与 MDC 传播器，用于虚拟线程或线程池任务的上下文恢复与清理。 |
 | Redis Stream Binder | 实现 Spring Cloud Stream Binder，将 Redis Stream 作为消息传输通道并暴露 binder 配置属性。 |
 | OpenAPI 文档 | 根据应用名、API 版本和描述自动创建 OpenAPI 元数据。 |
 | 部门主体增强 | 按需通过 REST 或 OpenFeign 查询部门信息，并使用 PrincipalEnricher 补充当前主体上下文。 |
@@ -103,6 +104,7 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 | 同步多实例缓存 | 多个服务实例需要在领域数据变化后广播失效事件并刷新本地缓存时，引入 cache-sync 和合适的 Stream Binder。 |
 | 统一内部服务调用 | 服务需要调用分布式 ID、部门主体或其他平台内部 API 时，使用 identity-client、department-principal 与 feign-plus。 |
 | 接入平台观测和文档 | 服务需要统一 OpenTelemetry 追踪默认值和 OpenAPI 基础信息时，引入 tracing-otel 与 spring-doc。 |
+| 在异步任务中保留链路上下文 | 服务通过虚拟线程或线程池执行任务且需要保留 Principal、trace/span 或 MDC 时，使用 Contexts 或 ContextExecutors 包装任务。 |
 
 ## 核心流程
 
@@ -113,6 +115,7 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 | 数据权限隔离 | MyBatis 拦截 SQL → 读取 DataIsolation 元数据和当前主体 → 获取组织层级与权限策略 → 构造隔离条件 → 改写查询/写入约束 → 缓存策略并响应失效事件 | IsolationAutoConfiguration、DataIsolationSelectVisitor、IsolationQueryProcessor、IsolationInsertProcessor、IsolationConstraintProcessor、CachedDataPermissionPolicyResolver |
 | 缓存同步 | 领域模块发布 CREATE/UPDATE/DELETE 事件 → StreamBridgeEventPublisher 写入绑定通道 → 消息中间件传递事件 → StreamEventSubscriber 接收并解析 → 匹配的消息存储清理或刷新缓存 | SyncerAutoConfiguration、StreamBridgeEventPublisher、StreamEventSubscriber、StreamEventPayloads、SyncerInitializer |
 | 平台客户端接入 | 业务模块读取 Starter 配置 → 自动配置选择 OpenFeign 或 RestClient 适配 → 调用 ID、部门或权限平台 API → 将返回结果转换为公共接口 → 上层业务通过 IdGenerator/PrincipalEnricher 等契约消费 | IdGeneratorAutoConfiguration、DepartmentPrincipalAutoConfiguration、OrganHierarchyClient、DataPermissionPolicyClient、G2rainFeignAutoConfiguration |
+| 异步链路上下文传播 | 父线程捕获 Micrometer ContextSnapshot 与 MDC → 任务经 Contexts/ContextExecutors 包装后提交 → 子线程恢复 OTel/MDC 与 Principal 上下文 → 任务结束后恢复并清理作用域 | OpenTelemetryTracingAutoConfiguration、Contexts、ContextExecutors、ContextPropagator |
 
 ## 流程图
 
@@ -163,7 +166,7 @@ flowchart TD
 | 构建组件 | `mvn clean package` | 从聚合根项目构建所有 Starter 子模块。 |
 | 本地安装 | `mvn clean install` | 安装到本地 Maven 仓库，便于业务工程试用依赖。 |
 
-版本号以项目构建配置为准，当前识别为 `1.0.4`。
+版本号以项目构建配置为准，当前识别为 `1.0.5`。
 
 ## 配置说明
 
@@ -207,13 +210,13 @@ flowchart TD
 
 | 示例 | 方式 | 内容 | 说明 |
 | --- | --- | --- | --- |
-| Web 基础设施 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-web-infra</artifactId><version>1.0.4</version></dependency>` | 接入请求包装、主体上下文、统一异常、访问日志和 Web 拦截器。 |
-| 数据权限隔离 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-mybatis-extensions</artifactId><version>1.0.4</version></dependency>` | 接入 MyBatis 数据隔离、权限策略和组织范围处理。 |
-| Redis 能力 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-data-redis</artifactId><version>1.0.4</version></dependency>` | 接入 Redis Helper 与 Redisson 分布式锁。 |
-| 缓存同步 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-cache-sync</artifactId><version>1.0.4</version></dependency>` | 接入基于 Spring Cloud Stream 的缓存同步发布与订阅。 |
-| 分布式 ID | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-identity-client</artifactId><version>1.0.4</version></dependency>` | 接入平台分布式 ID 客户端与 IdGenerator 实现。 |
-| 链路追踪 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-tracing-otel</artifactId><version>1.0.4</version></dependency>` | 接入 OpenTelemetry 追踪自动配置。 |
-| OpenAPI 文档 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-spring-doc</artifactId><version>1.0.4</version></dependency>` | 接入统一 OpenAPI 元数据。 |
+| Web 基础设施 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-web-infra</artifactId><version>1.0.5</version></dependency>` | 接入请求包装、主体上下文、统一异常、访问日志和 Web 拦截器。 |
+| 数据权限隔离 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-mybatis-extensions</artifactId><version>1.0.5</version></dependency>` | 接入 MyBatis 数据隔离、权限策略和组织范围处理。 |
+| Redis 能力 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-data-redis</artifactId><version>1.0.5</version></dependency>` | 接入 Redis Helper 与 Redisson 分布式锁。 |
+| 缓存同步 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-cache-sync</artifactId><version>1.0.5</version></dependency>` | 接入基于 Spring Cloud Stream 的缓存同步发布与订阅。 |
+| 分布式 ID | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-identity-client</artifactId><version>1.0.5</version></dependency>` | 接入平台分布式 ID 客户端与 IdGenerator 实现。 |
+| 链路追踪 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-tracing-otel</artifactId><version>1.0.5</version></dependency>` | 接入 OpenTelemetry 追踪自动配置；跨线程任务需再经 Contexts 或 ContextExecutors 包装。 |
+| OpenAPI 文档 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-spring-doc</artifactId><version>1.0.5</version></dependency>` | 接入统一 OpenAPI 元数据。 |
 
 ## 安全说明
 
@@ -226,6 +229,7 @@ flowchart TD
 | 内部客户端鉴权 | ID、部门和权限策略客户端访问平台内部服务时，需要沿用网关/服务间认证与最小权限约定，不能把内部端点直接暴露给外部调用方。 |
 | Redis 与消息边界 | 分布式锁、缓存同步和 Redis Stream Binder 依赖共享 Redis；生产环境应隔离命名空间、限制凭据权限并评估消息积压和重复消费。 |
 | 可观测数据 | OpenTelemetry 属性和访问日志可能包含请求、主体或链路信息，应控制敏感字段、采样率和导出端点权限。 |
+| 异步 MDC 传播 | tracing-otel 会传播 MDC；业务注册的 MDC 键也必须脱敏，且任务应通过 Contexts 或 ContextExecutors 包装，以便在结束时恢复和清理作用域。 |
 
 ## 与关联仓库的关系
 
@@ -242,7 +246,7 @@ flowchart TD
 | g2rain-starter-cache-sync | 适配 Spring Cloud Stream，发布和订阅跨实例缓存同步事件。 | SyncerAutoConfiguration、StreamBridgeEventPublisher、StreamEventSubscriber |
 | g2rain-starter-identity-client | 装配分布式 ID 客户端和 g2rain-common IdGenerator 实现。 | IdGeneratorAutoConfiguration、IdGeneratorClient、IdGeneratorImpl |
 | g2rain-starter-feign-plus | 提供平台 OpenFeign 客户端增强自动配置。 | G2rainFeignAutoConfiguration |
-| g2rain-starter-tracing-otel | 装配 OpenTelemetry 追踪并通过环境后处理器设置默认属性。 | OpenTelemetryTracingAutoConfiguration、OpenTelemetryTracingPostProcessor |
+| g2rain-starter-tracing-otel | 装配 OpenTelemetry 追踪、环境默认属性，并为 Contexts 注册 OTel/MDC 异步上下文传播器。 | OpenTelemetryTracingAutoConfiguration、OpenTelemetryTracingPostProcessor、Contexts |
 | g2rain-starter-stream-redis | 实现基于 Redis Stream 的 Spring Cloud Stream Binder。 | G2rainRedisBinderAutoConfiguration、G2rainRedisMessageChannelBinder |
 | g2rain-starter-spring-doc | 根据应用配置生成统一 OpenAPI 元数据。 | SpringDocAutoConfiguration |
 | g2rain-starter-department-principal | 通过 REST/OpenFeign 获取部门信息并增强主体上下文。 | DepartmentPrincipalAutoConfiguration、DepartmentPrincipalEnricher、DepartmentPrincipalClient |
@@ -271,6 +275,7 @@ flowchart TD
 | 缓存同步事件未生效 | Spring Cloud Stream binding、发布通道、dataSource 或消息存储注册不一致。 | 检查 SyncerAutoConfiguration、binder 配置、目标 destination 和订阅端初始化日志。 |
 | ID 或部门主体调用失败 | 服务地址、RestClient/OpenFeign 适配选择、内部鉴权或 g2rain.* 配置不正确。 | 检查 IdGeneratorProperties、DepartmentPrincipalProperties、服务发现及客户端调用日志。 |
 | 链路或 OpenAPI 信息缺失 | tracing-otel/spring-doc 子模块未引入，或导出端点、应用名和文档属性未配置。 | 确认对应 Starter 在依赖树中，并检查 OpenTelemetry 环境属性和 g2rain.springdoc.* 配置。 |
+| 异步任务中 trace/span 或 MDC 丢失 | 任务直接提交到线程池或虚拟线程，未从父线程捕获并恢复上下文。 | 引入 tracing-otel 后，使用 Contexts 或 ContextExecutors 包装 Runnable、Callable 或 Supplier；确认 OTel API 位于类路径。 |
 
 ## 关联仓库
 
