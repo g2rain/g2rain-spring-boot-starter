@@ -9,7 +9,7 @@
 | `g2rain-starter-cache-sync` | JAR | 将 common syncer 事件适配到显式 Spring Cloud Stream bindings |
 | `g2rain-starter-identity-client` | JAR | 调用基础设施服务生成雪花 ID 与业务 ID |
 | `g2rain-starter-feign-plus` | JAR | GET 参数、身份头透传、统一结果解码与异常转换 |
-| `g2rain-starter-tracing-otel` | JAR | OpenTelemetry 低优先级默认配置、传播和日志关联 |
+| `g2rain-starter-tracing-otel` | JAR | OpenTelemetry 低优先级默认配置、W3C 传播、日志关联，以及通过 `Contexts` 传播 OTel/MDC 的异步上下文 |
 | `g2rain-starter-stream-redis` | JAR | Redis-backed Spring Cloud Stream Binder |
 | `g2rain-starter-spring-doc` | JAR | OpenAPI 基础信息与隐藏字段定制 |
 | `g2rain-starter-department-principal` | JAR | 部门主体信息远程解析与上下文增强 |
