@@ -18,4 +18,4 @@
 
 ## OpenAPI 与追踪
 
-SpringDoc 自动配置提供 `OpenAPI` 和 `PropertyCustomizer` Bean。Tracing 模块通过环境后处理器加载低优先级默认配置；业务 `application` 配置可以覆盖这些默认值。
+SpringDoc 自动配置提供 `OpenAPI` 和 `PropertyCustomizer` Bean。Tracing 模块通过环境后处理器加载低优先级默认配置；业务 `application` 配置可以覆盖这些默认值。OTel 位于类路径时，自动配置会为 `g2rain-common` 的 `Contexts` 注册 Micrometer ContextSnapshot 与 MDC 传播器；这依赖业务侧使用 `Contexts` 或 `ContextExecutors` 包装跨线程任务。

@@ -2,7 +2,7 @@
 
 ## 项目定位
 
-本仓库是 G2rain 的 Spring Boot Starter 套件，统一管理 Starter 版本、依赖和构建规则，并提供 Web、身份、链路追踪、MyBatis 数据隔离、Redis、缓存同步、Feign、Redis Stream、OpenAPI 与部门主体能力。
+本仓库是 G2rain 的 Spring Boot Starter 套件，统一管理 Starter 版本、依赖和构建规则，并提供 Web、身份、跨线程链路上下文传播、MyBatis 数据隔离、Redis、缓存同步、Feign、Redis Stream、OpenAPI 与部门主体能力。
 
 ## 工作入口
 
@@ -10,6 +10,7 @@
 - 根 `pom.xml`、模块 POM、自动配置类、配置元数据、测试和工作流是当前实现的事实来源。
 - 新增或调整模块、自动配置、配置键、外部服务契约、消息绑定、公共 API 或发布行为时，同步更新 `docs/`。
 - 不在未经测试的情况下声明数据库、消息中间件、服务端点或 Spring Boot 版本兼容性。
+- `tracing-otel` 会向 `g2rain-common` 的 `Contexts` 注册 OTel/MDC 传播器；异步或虚拟线程任务须经 `Contexts` / `ContextExecutors` 包装，避免主体或链路上下文丢失。
 
 ## 常用验证
 

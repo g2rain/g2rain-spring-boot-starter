@@ -10,7 +10,7 @@ Web、Feign、部门主体和数据隔离模块会传播或解释身份信息。
 
 ## 日志与遥测
 
-访问日志与 Feign debug 日志可能包含 header、body 和业务结果。生产环境应关闭不必要的 debug，配置脱敏，并禁止记录认证凭据、Cookie、Token 和个人敏感数据。OTLP 端点和认证信息由应用安全配置提供。
+访问日志与 Feign debug 日志可能包含 header、body 和业务结果。生产环境应关闭不必要的 debug，配置脱敏，并禁止记录认证凭据、Cookie、Token 和个人敏感数据。OTLP 端点和认证信息由应用安全配置提供。`tracing-otel` 会传播 MDC；业务注册的 MDC 键同样应遵守脱敏要求，并在异步任务结束后由 `Contexts` 的包装作用域恢复和清理。
 
 ## Redis 与消息
 
