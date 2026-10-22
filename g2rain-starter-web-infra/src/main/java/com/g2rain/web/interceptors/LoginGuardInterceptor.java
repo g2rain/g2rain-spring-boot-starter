@@ -1,7 +1,6 @@
 package com.g2rain.web.interceptors;
 
 
-import com.g2rain.common.enums.SessionType;
 import com.g2rain.common.exception.BusinessException;
 import com.g2rain.common.exception.SystemErrorCode;
 import com.g2rain.common.web.PrincipalContextHolder;
@@ -27,14 +26,14 @@ import java.util.Optional;
  * <ul>
  *     <li>ASYNC / ERROR 派发直接放行（见 {@link #preHandle} 内说明）。</li>
  *     <li>如果是微服务之间的后台调用，或非 Controller 方法调用，则直接放行。</li>
- *     <li>如果方法上标注了 {@link LoginGuard} 注解，可配置 {@code require} 和 {@code anonymous}。</li>
+ *     <li>如果方法上标注了 {@link LoginGuard} 注解，可通过 {@code require} 配置是否校验登录。</li>
  *     <li>根据当前 {@link PrincipalContextHolder#getSessionType()} 判断会话类型并验证登录状态。</li>
  *     <li>若校验失败，则抛出 {@link BusinessException}，返回未认证错误。</li>
  * </ul>
  *
  * <p><b>使用示例：</b></p>
  * <pre>{@code
- * @LoginGuard(require = true, anonymous = false)
+ * @LoginGuard(require = true)
  * @GetMapping("/api/data")
  * public String getData() {
  *     return "secure data";
@@ -91,23 +90,15 @@ public record LoginGuardInterceptor() implements HandlerInterceptor {
             return true;
         }
 
-        // 根据会话类型验证登录状态
-        SessionType sessionType = PrincipalContextHolder.getSessionType();
-        if (SessionType.isUser(sessionType) && Objects.nonNull(PrincipalContextHolder.getUserId())) {
-            return true;
-        }
+        // 根据会话类型取出主体 ID，主体 ID 存在且为正才视为已登录
+        Long principalId = switch (PrincipalContextHolder.getSessionType()) {
+            case USER, ANONYMOUS -> PrincipalContextHolder.getUserId();
+            case PASSPORT -> PrincipalContextHolder.getPassportId();
+            case MEMBER -> PrincipalContextHolder.getMemberId();
+            case null -> null;
+        };
 
-        if (SessionType.isPassport(sessionType) && Objects.nonNull(PrincipalContextHolder.getPassportId())) {
-            return true;
-        }
-
-        if (SessionType.isAnonymous(sessionType)) {
-            return true;
-        }
-
-        if (SessionType.isMember(sessionType)
-            && Objects.nonNull(PrincipalContextHolder.getMemberId())
-            && PrincipalContextHolder.getMemberId() > 0L) {
+        if (Objects.nonNull(principalId) && principalId > 0L) {
             return true;
         }
 

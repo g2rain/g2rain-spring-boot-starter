@@ -8,8 +8,10 @@ import com.g2rain.common.json.JsonCodec;
 import com.g2rain.common.json.JsonCodecFactory;
 import com.g2rain.common.model.Result;
 import com.g2rain.common.utils.Collections;
+import com.g2rain.common.utils.Strings;
 import com.g2rain.common.web.PrincipalContext;
 import com.g2rain.common.web.PrincipalContextHolder;
+import com.g2rain.common.web.PrincipalHeaders;
 import feign.Contract;
 import feign.MethodMetadata;
 import feign.RequestInterceptor;
@@ -29,6 +31,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -151,11 +160,12 @@ public class G2rainFeignAutoConfiguration {
                 template.headers(principalContext.getHeaders());
             }
 
+            // Debug 日志：NAME / ORGAN_NAME 经 headersForLogging 解码后再输出，与 web-infra、网关对齐
             if (log.isDebugEnabled()) {
                 byte[] body = template.body();
                 String bodyStr = Objects.nonNull(body) ? new String(body) : null;
                 JsonCodec jsonCodec = JsonCodecFactory.instance();
-                String headerStr = jsonCodec.obj2str(template.headers());
+                String headerStr = jsonCodec.obj2str(headersForLogging(template.headers()));
                 log.debug("[Feign][Request] url={} headers={} body={}",
                     template.url(), headerStr, bodyStr
                 );
@@ -184,9 +194,10 @@ public class G2rainFeignAutoConfiguration {
             try (InputStream is = response.body().asInputStream()) {
                 Object result = mapper.readValue(is, mapper.getTypeFactory().constructType(type));
 
+                // Debug 日志：与请求侧相同，仅对日志副本做 NAME / ORGAN_NAME 解码
                 if (log.isDebugEnabled()) {
                     JsonCodec jsonCodec = JsonCodecFactory.instance();
-                    String headerStr = jsonCodec.obj2str(response.headers());
+                    String headerStr = jsonCodec.obj2str(headersForLogging(response.headers()));
                     String bodyStr = jsonCodec.obj2str(result);
                     log.debug("[Feign][Response] status={} headers={} body={}",
                         response.status(), headerStr, bodyStr
@@ -210,5 +221,64 @@ public class G2rainFeignAutoConfiguration {
                 throw new BusinessException(SystemErrorCode.SYSTEM_INTERNAL_ERROR, "Failed to decode feign response body");
             }
         };
+    }
+
+    /**
+     * 构造仅用于日志输出的 Header 副本。
+     * <p>
+     * {@link PrincipalContext#getHeaders()} 会对 {@link PrincipalHeaders#NAME}、
+     * {@link PrincipalHeaders#ORGAN_NAME} 做 URL 编码以便 HTTP 透传；直接打印会出现百分号编码或乱码观感。
+     * 本方法与 {@code AccessLogFilter}、网关 {@code TraceLoggingFilter} 一致：先解码再入日志，
+     * 绝不回写 {@link feign.RequestTemplate} / 响应对象上的原始 Header。
+     *
+     * @param headers Feign 请求或响应上的原始 Header（多值）
+     * @return 供日志序列化的副本；入参为空时返回空 Map
+     */
+    private static Map<String, Collection<String>> headersForLogging(Map<String, Collection<String>> headers) {
+        if (Objects.isNull(headers) || headers.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<String, Collection<String>> result = new LinkedHashMap<>(headers.size());
+        headers.forEach((name, values) -> {
+            if (Objects.isNull(values)) {
+                result.put(name, null);
+                return;
+            }
+
+            List<String> decoded = new ArrayList<>(values.size());
+            for (String value : values) {
+                decoded.add(safeDecode(name, value));
+            }
+
+            result.put(name, decoded);
+        });
+
+        return result;
+    }
+
+    /**
+     * 按 Header 名决定是否 URL 解码（仅日志）。
+     * <p>
+     * 仅当 key 为 {@code x-name} / {@code x-organ-name}（大小写不敏感）时
+     * {@link URLDecoder#decode(String, java.nio.charset.Charset)}；其余 key 原样返回。
+     *
+     * @param key   Header 名
+     * @param value Header 值，可为已 URL 编码的中文名
+     * @return 解码后的可读值；空白入参返回 {@code null}
+     */
+    private static String safeDecode(String key, String value) {
+        if (Strings.isBlank(value)) {
+            return null;
+        }
+
+        String keyLower = key.toLowerCase();
+        String nameLower = PrincipalHeaders.NAME.getLower();
+        String organNameLower = PrincipalHeaders.ORGAN_NAME.getLower();
+        if (!nameLower.equals(keyLower) && !organNameLower.equals(keyLower)) {
+            return value;
+        }
+
+        return URLDecoder.decode(value, StandardCharsets.UTF_8);
     }
 }

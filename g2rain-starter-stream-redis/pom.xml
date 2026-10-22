@@ -31,10 +31,5 @@
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-redis</artifactId>
         </dependency>
-        <!-- Spring cloud Stream 存在两个依赖版本, install 报错, 所以引入这个版本控制 -->
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-        </dependency>
     </dependencies>
 </project>
