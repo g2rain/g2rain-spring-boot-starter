@@ -26,10 +26,5 @@
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-stream</artifactId>
         </dependency>
-        <!-- Spring cloud Stream 存在两个依赖版本, install 抱错, 所以引入这个版本控制 -->
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-        </dependency>
     </dependencies>
 </project>

@@ -13,7 +13,6 @@ import java.lang.annotation.Target;
  * <p>属性说明：</p>
  * <ul>
  *     <li>{@code require} — 是否强制进行登录校验，默认为 {@code true}。</li>
- *     <li>{@code anonymous} — 是否允许匿名访问，默认为 {@code false}。</li>
  * </ul>
  *
  * <p><b>使用示例：</b></p>
@@ -23,9 +22,9 @@ import java.lang.annotation.Target;
  *     // 仅允许已登录用户访问
  * }
  *
- * @LoginGuard(require = false, anonymous = true)
+ * @LoginGuard(require = false)
  * public void openMethod() {
- *     // 允许匿名访问
+ *     // 不校验登录
  * }
  * }</pre>
  *
