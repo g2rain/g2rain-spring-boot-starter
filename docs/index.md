@@ -4,6 +4,8 @@
 
 ## 导航
 
+- [v1.0.6 发布草稿与升级注意事项](releases/v1.0.6.md)：当前完整构建被 tracing-otel 的上下文传播依赖问题阻断，尚不可正式发布。
+
 - [项目元数据](project.yaml)
 - [架构总览](architecture/overview.md)
 - [模块说明](architecture/modules.md)
@@ -25,4 +27,6 @@
 
 ## 当前验证
 
-2026-09-06 执行 `mvn test` 成功：12 个 Reactor 项目全部通过，共执行 101 个测试，0 失败、0 错误、0 跳过。当前版本事实来源为根 `pom.xml` 的 `revision=1.0.5`；该测试记录不代表此后代码变更已重新验证。
+当前版本事实来源为根 `pom.xml` 的 `revision=1.0.6`。2026-10-30 执行 `mvn -B clean verify` 失败：Web Infra 的 51 项测试通过，但 tracing-otel 编译缺少 com.g2rain.common.concurrent 包，后续模块跳过，详见发布草稿。
+
+历史记录：2026-09-06 执行 `mvn test` 成功，12 个 Reactor 项目全部通过，共 101 项测试，0 失败、0 错误、0 跳过。该历史结果不代表 v1.0.6 已通过验证。
