@@ -47,7 +47,7 @@
  * @RestController
  * public class DemoController {
  *
- *     @LoginGuard(require = true, anonymous = false)
+ *     @LoginGuard(require = true)
  *     @IdentityInject(userIdPropertyName = "userId")
  *     @GetMapping("/api/demo")
  *     public Result<String> demo(@RequestParam String param) {
