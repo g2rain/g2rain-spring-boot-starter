@@ -7,15 +7,15 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.g2rain/g2rain-spring-boot-starter.svg)](https://central.sonatype.com/artifact/com.g2rain/g2rain-spring-boot-starter)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-25-437291?logo=openjdk&logoColor=white)](https://openjdk.org/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.5-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2025.1.1-586069?logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.1.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
+[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2025.1.4-586069?logo=spring&logoColor=white)](https://spring.io/projects/spring-cloud)
 [![Maven](https://img.shields.io/badge/build-Maven-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org/)
 
-下一代AI软件开发范式，AI原生Agent平台，开源的企业级SaaS底座。
+谷雨G2rain智能体平台的 Spring Boot 基础设施接入套件。
 
 g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven 子模块组成，覆盖 Web 基础设施、数据权限隔离、Redis、缓存同步、分布式 ID、Feign、OpenTelemetry、Redis Stream、OpenAPI 与部门主体增强。项目通过 `AutoConfiguration.imports`、条件装配和可覆盖 Bean，将平台约定按需接入业务服务；`tracing-otel` 可为经 `Contexts` 或 `ContextExecutors` 包装的异步任务传播 OTel/MDC 上下文。
 
-[工程文档](docs/index.md) · [官网](https://www.g2rain.com) · [Issues](https://github.com/g2rain/g2rain/issues) · [Discussions](https://github.com/g2rain/g2rain/discussions)
+[工程文档](docs/index.md) · [官网](http://www.g2rain.com) · [Issues](https://github.com/g2rain/g2rain/issues) · [Discussions](https://github.com/g2rain/g2rain/discussions)
 
 ## 目录
 
@@ -50,7 +50,7 @@ g2rain Spring Boot 平台 Starter 集合，由 11 个可独立引入的 Maven �
 
 ## 平台定位
 
-该仓库是 g2rain 后端运行时集成层：位于 g2rain-common 公共契约之上、具体平台服务与业务服务之下，通过 11 个独立 Starter 把 Web、数据访问、Redis、消息、内部客户端、追踪和文档能力按需装配进 Spring Boot 应用。
+该仓库是谷雨G2rain智能体平台的后端运行时集成层：位于 g2rain-common 公共契约之上、具体平台服务与业务服务之下，通过 11 个独立 Starter 把 Web、数据访问、Redis、消息、内部客户端、追踪和文档能力按需装配进 Spring Boot 应用。
 
 ## 业务域说明
 
@@ -140,7 +140,7 @@ flowchart TD
 
 | 类别 | 说明 |
 | --- | --- |
-| 运行时 | Java 25、Spring Boot 4.0.5、Spring Cloud 2025.1.1 |
+| 运行时 | Java 25、Spring Boot 4.1.2、Spring Cloud 2025.1.4 |
 | 核心能力聚合 | g2rain-starter-aegis-core（Web、身份客户端、OpenTelemetry） |
 | 基础设施 | Redis、OpenFeign |
 | 数据访问与缓存 | MyBatis、JSQLParser、Redis、Redisson、Caffeine |
@@ -153,7 +153,7 @@ flowchart TD
 
 - JDK 25+
 - Maven 3.9+
-- Spring Boot 4.0.5 兼容基线的业务工程
+- Spring Boot 4.1.2 兼容基线的业务工程
 - 按所选模块准备 Redis、Redisson、Spring Cloud Stream、OpenFeign 或 OpenTelemetry 后端
 - 数据隔离、ID 与部门主体模块需要可访问的 g2rain 平台内部服务
 
@@ -166,7 +166,7 @@ flowchart TD
 | 构建组件 | `mvn clean package` | 从聚合根项目构建所有 Starter 子模块。 |
 | 本地安装 | `mvn clean install` | 安装到本地 Maven 仓库，便于业务工程试用依赖。 |
 
-版本号以项目构建配置为准，当前识别为 `1.0.5`。
+版本号以项目构建配置为准，当前识别为 `1.0.6`。
 
 ## 配置说明
 
@@ -195,6 +195,8 @@ flowchart TD
 
 ## 代码质量与测试
 
+以下测试数量来自 2026-09-06 的历史验证记录，不代表当前 1.0.6 版本已重新完成验证。
+
 | 检查项 | 命令 | 说明 |
 | --- | --- | --- |
 | Maven 测试 | `mvn test` | 构建 12 个 Reactor 项目并运行单元测试。2026-09-06 实测执行 101 个测试，0 失败、0 错误、0 跳过。 |
@@ -204,19 +206,19 @@ flowchart TD
 | SpotBugs | `mvn spotbugs:check` | 识别潜在缺陷和风险代码。 |
 | JaCoCo | `mvn test jacoco:report` | 当前 Surefire `argLine` 会覆盖 JaCoCo 代理参数，实测未生成执行数据；修正参数合并前不能将该命令视为有效覆盖率验证。 |
 
-当前测试集中在 Web、Data Redis、Cache Sync 和 Stream Redis。Identity、Tracing、MyBatis 数据隔离、Feign、SpringDoc 与 Department Principal 尚无实际执行的测试，详见 [测试策略](docs/development/testing.md)。
+2026-09-06 的历史测试记录集中在 Web、Data Redis、Cache Sync 和 Stream Redis。Identity、Tracing、MyBatis 数据隔离、Feign、SpringDoc 与 Department Principal 尚无实际执行的测试，详见 [测试策略](docs/development/testing.md)。
 
 ## 接入示例
 
 | 示例 | 方式 | 内容 | 说明 |
 | --- | --- | --- | --- |
-| Web 基础设施 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-web-infra</artifactId><version>1.0.5</version></dependency>` | 接入请求包装、主体上下文、统一异常、访问日志和 Web 拦截器。 |
-| 数据权限隔离 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-mybatis-extensions</artifactId><version>1.0.5</version></dependency>` | 接入 MyBatis 数据隔离、权限策略和组织范围处理。 |
-| Redis 能力 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-data-redis</artifactId><version>1.0.5</version></dependency>` | 接入 Redis Helper 与 Redisson 分布式锁。 |
-| 缓存同步 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-cache-sync</artifactId><version>1.0.5</version></dependency>` | 接入基于 Spring Cloud Stream 的缓存同步发布与订阅。 |
-| 分布式 ID | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-identity-client</artifactId><version>1.0.5</version></dependency>` | 接入平台分布式 ID 客户端与 IdGenerator 实现。 |
-| 链路追踪 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-tracing-otel</artifactId><version>1.0.5</version></dependency>` | 接入 OpenTelemetry 追踪自动配置；跨线程任务需再经 Contexts 或 ContextExecutors 包装。 |
-| OpenAPI 文档 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-spring-doc</artifactId><version>1.0.5</version></dependency>` | 接入统一 OpenAPI 元数据。 |
+| Web 基础设施 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-web-infra</artifactId><version>1.0.6</version></dependency>` | 接入请求包装、主体上下文、统一异常、访问日志和 Web 拦截器。 |
+| 数据权限隔离 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-mybatis-extensions</artifactId><version>1.0.6</version></dependency>` | 接入 MyBatis 数据隔离、权限策略和组织范围处理。 |
+| Redis 能力 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-data-redis</artifactId><version>1.0.6</version></dependency>` | 接入 Redis Helper 与 Redisson 分布式锁。 |
+| 缓存同步 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-cache-sync</artifactId><version>1.0.6</version></dependency>` | 接入基于 Spring Cloud Stream 的缓存同步发布与订阅。 |
+| 分布式 ID | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-identity-client</artifactId><version>1.0.6</version></dependency>` | 接入平台分布式 ID 客户端与 IdGenerator 实现。 |
+| 链路追踪 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-tracing-otel</artifactId><version>1.0.6</version></dependency>` | 接入 OpenTelemetry 追踪自动配置；跨线程任务需再经 Contexts 或 ContextExecutors 包装。 |
+| OpenAPI 文档 | Maven | `<dependency><groupId>com.g2rain</groupId><artifactId>g2rain-starter-spring-doc</artifactId><version>1.0.6</version></dependency>` | 接入统一 OpenAPI 元数据。 |
 
 ## 安全说明
 
