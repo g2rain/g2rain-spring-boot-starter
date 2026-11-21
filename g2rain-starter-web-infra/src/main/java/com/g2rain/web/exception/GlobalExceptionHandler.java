@@ -435,7 +435,7 @@ public class GlobalExceptionHandler {
     /**
      * SSE / 响应已提交时不再写 JSON {@link Result}，避免二次 {@code HttpMessageNotWritableException}。
      */
-    private ResponseEntity<Result<Void>> respond(HttpServletResponse response, Result<Void> result) {
+    static ResponseEntity<Result<Void>> respond(HttpServletResponse response, Result<Void> result) {
         if (response.isCommitted()) {
             return null;
         }

@@ -4,6 +4,7 @@ package com.g2rain.web.autoconfigure;
 import com.g2rain.common.exception.DefaultExceptionProcessor;
 import com.g2rain.common.exception.ErrorMessageRegistry;
 import com.g2rain.common.exception.ExceptionProcessor;
+import com.g2rain.web.exception.DataAccessExceptionHandler;
 import com.g2rain.web.exception.GlobalExceptionHandler;
 import com.g2rain.web.filters.AccessLogFilter;
 import com.g2rain.web.filters.GlobalExceptionFilter;
@@ -16,11 +17,13 @@ import lombok.NonNull;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Role;
 import org.springframework.core.Ordered;
@@ -277,5 +280,15 @@ public class WebAutoConfiguration implements WebMvcConfigurer {
                 Ordered.HIGHEST_PRECEDENCE + properties.getIdentityParamInjectorOrder()
             );
         }
+    }
+
+    /**
+     * 有数据访问（spring-tx 在类路径上）时注册数据库异常处理。
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = "org.springframework.dao.DataAccessException")
+    @Import(DataAccessExceptionHandler.class)
+    static class DataAccessExceptionConfiguration {
+
     }
 }
