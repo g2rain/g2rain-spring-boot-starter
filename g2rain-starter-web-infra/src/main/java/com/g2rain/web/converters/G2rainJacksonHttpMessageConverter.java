@@ -194,7 +194,7 @@ public class G2rainJacksonHttpMessageConverter extends JacksonJsonHttpMessageCon
     private PrettyPrinter initSsePrettyPrinter() {
         DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         // 使用两空格缩进，每行前加 data: 换行前缀
-        prettyPrinter.indentObjectsWith(new DefaultIndenter("  ", "\ndata:"));
+        prettyPrinter.indentObjectsWith(new DefaultIndenter("  ", "\ndata: "));
         return prettyPrinter;
     }
 

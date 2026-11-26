@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.7 — 待发布
+
+- 依赖 `g2rain-common` 1.0.10，身份上下文支持访客 ID。
+- 本版本无 Starter 代码改动。
+
 ## 1.0.6 — 待发布
 
 - 更新 Spring Boot 4.1.2、Spring Cloud 2025.1.4 与相关依赖版本声明。
