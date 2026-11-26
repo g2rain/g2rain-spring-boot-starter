@@ -3,7 +3,7 @@
 ## 1.0.7 — 待发布
 
 - 依赖 `g2rain-common` 1.0.10，身份上下文支持访客 ID。
-- 本版本无 Starter 代码改动。
+- Redis Binder 健康检查仅在 classpath 中有 Spring Boot Health 时装配，缺少时不再导致 Binder 自动配置加载失败。
 
 ## 1.0.6 — 待发布
 
